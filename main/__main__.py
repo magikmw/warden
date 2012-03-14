@@ -87,7 +87,7 @@ GAME_TITLE = 'Warden'
 VERSION = '0.0.1'
 
 #DEBUG
-DEBUG_NO_FOG = True
+DEBUG_NO_FOG = False
 
 #FPS maximum
 LIMIT_FPS = 100
