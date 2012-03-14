@@ -86,6 +86,9 @@ import textwrap #for messages
 GAME_TITLE = 'Warden'
 VERSION = '0.0.1'
 
+#DEBUG
+DEBUG_NO_FOG = True
+
 #FPS maximum
 LIMIT_FPS = 100
 
@@ -94,18 +97,18 @@ SCREEN_WIDTH = 80
 SCREEN_HEIGHT = 50
 
 #on-screen map size within above
-MAP_WIDTH = 59
-MAP_HEIGHT = 42
+MAP_WIDTH = 80
+MAP_HEIGHT = 40
 
 #min/max room dimensions (both horizontal and vertical)
 ROOM_MAX_SIZE = 9
 ROOM_MIN_SIZE = 5
-MAX_ROOMS = 50 #max rooms number per map
+MAX_ROOMS = 100 #max rooms number per map
 
 #FOV settings
 FOV_ALGO = 0 #default libtcod FOV algorithm
 FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 10 #fov range
+TORCH_RADIUS = 8 #fov range
 
 #walls/floor colours
 #those are a bit misleading, check 'render_all()'
@@ -124,14 +127,8 @@ MAX_ROOM_ITEMS = 2
 
 #GUI sizes and coordinates
 BAR_WIDTH = 20 #standard HP/MANA/whatever bar width
-PANEL_HEIGHT = 8 #bottom panel height
+PANEL_HEIGHT = 10 #bottom panel height
 PANEL_Y = SCREEN_HEIGHT - PANEL_HEIGHT #bottom panel placement
-
-#side panel
-SIDE_WIDTH = 21
-SIDE_HEIGHT = SCREEN_HEIGHT - PANEL_HEIGHT
-SIDE_Y = 0
-SIDE_X = SCREEN_WIDTH - SIDE_WIDTH
 
 #message log constants
 MSG_X = BAR_WIDTH + 2 #where message log starts (x)
@@ -748,46 +745,30 @@ def render_all():
 
     libtcod.console_hline(panel, 0, 0, SCREEN_WIDTH)
 
+    libtcod.console_print_ex(panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, player.name.capitalize())
+
+    render_bar(1, 3, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp, libtcod.dark_red, libtcod.darkest_red, panel)
+    render_bar(1, 4, BAR_WIDTH, 'POWER', player.fighter.power, player.fighter.power, libtcod.silver, libtcod.darkest_grey, panel)
+
+    libtcod.console_print_ex(panel, 1, 6, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon level: ' + str(d_level))
+    libtcod.console_print_ex(panel, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Turns passed: ' + str(turns_passed))
+    libtcod.console_print_ex(panel, 1, 8, libtcod.BKGND_NONE, libtcod.LEFT, 'Killing spree: ' + str(monsters_killed))
+
     #print the game messages, one line at a time
     y = 2
     for (line, color) in game_msgs:
         libtcod.console_set_default_foreground(panel, color)
-        libtcod.console_print_ex(panel, 1, y, libtcod.BKGND_NONE, libtcod.LEFT, line)
+        libtcod.console_print_ex(panel, MSG_X, y, libtcod.BKGND_NONE, libtcod.LEFT, line)
         y += 1
 
     #display names of objects under the mouse
     libtcod.console_set_default_foreground(panel, libtcod.light_gray)
     mouselook = get_names_under_mouse()
     if len(mouselook) >= 1:
-        libtcod.console_print_ex(panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'You are looking at: ' + mouselook)
+        libtcod.console_print_ex(panel, MSG_X, 1, libtcod.BKGND_NONE, libtcod.LEFT, 'You are looking at: ' + mouselook)
 
     #blit panel's contents to the root console
     libtcod.console_blit(panel, 0, 0, SCREEN_WIDTH, PANEL_HEIGHT, 0, 0, PANEL_Y)
-
-    ###############################
-    # SIDE PANEL
-    ###############################
-
-    #prepare the side panel
-    libtcod.console_set_default_background(side, libtcod.black)
-    libtcod.console_clear(side)
-
-    #frame
-    libtcod.console_vline(side, 0, 0, SIDE_HEIGHT)
-
-    libtcod.console_print_ex(side, 1, 2, libtcod.BKGND_NONE, libtcod.LEFT, player.name.capitalize())
-
-    render_bar(1, 4, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp, libtcod.dark_red, libtcod.darkest_red, side)
-    render_bar(1, 5, BAR_WIDTH, 'POWER', player.fighter.power, player.fighter.power, libtcod.silver, libtcod.darkest_grey, side)
-
-    libtcod.console_print_ex(side, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Strenght: ' +  str(player.fighter.power))
-    libtcod.console_print_ex(side, 1, 8, libtcod.BKGND_NONE, libtcod.LEFT, 'Armor: ' + str(player.fighter.defense))
-    libtcod.console_print_ex(side, 1, 11, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon level: ' + str(d_level))
-    libtcod.console_print_ex(side, 1, 12, libtcod.BKGND_NONE, libtcod.LEFT, 'Turns passed: ' + str(turns_passed))
-    libtcod.console_print_ex(side, 1, 13, libtcod.BKGND_NONE, libtcod.LEFT, 'Killing spree: ' + str(monsters_killed))
-
-    #blit contents to the root
-    libtcod.console_blit(side, 0, 0, SIDE_WIDTH, SIDE_HEIGHT, 0, SIDE_X, SIDE_Y)
 
 #keystrokes function
 def handle_keys():
@@ -1462,6 +1443,14 @@ def initialize_fov():
             libtcod.map_set_properties(fov_map, x, y, not map[x][y].block_sight, not map[x][y].blocked)
     libtcod.console_clear(con) #unexplored areas start black
 
+
+    if DEBUG_NO_FOG:  #debug mode, reveal everything
+        for y in range(MAP_HEIGHT):
+            for x in range(MAP_WIDTH):
+                map[x][y].explored = True
+        for object in objects:
+            object.always_visible = True
+
 #main game function
 def play_game():
     global game_state, win_print, highlight, interest_cycle, didnttaketurn, turns_passed
@@ -1514,7 +1503,6 @@ libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
 #bottom panel console
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
-side = libtcod.console_new(SIDE_WIDTH, SIDE_HEIGHT)
 
 high = ord('a')
 main_menu()
