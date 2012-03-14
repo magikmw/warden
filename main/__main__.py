@@ -141,21 +141,7 @@ MSG_HEIGHT = PANEL_HEIGHT - 2 #top message placement (y)
 #menu constants
 INVENTORY_WIDTH = 50
 
-#effects constants
-HEAL_AMOUNT = 4
-
-LIGHTNING_RANGE = 5
-LIGHTNING_DAMAGE = 20
-CONFUSE_RANGE = 8
-CONFUSE_NUM_TURNS = 10
-
-FIREBALL_RADIUS = 3
-FIREBALL_DAMAGE = 12
-
-#victory conditon variables
-MONSTERS_TO_WIN = 30 #how many monsters you have to kill to win
-win_print = 0 #has the win message been printed already?
-monsters_killed = 0 #amount of monsters killed so far
+CONFUSE_NUM_TURNS = 5
 
 #tab-look variable declaration
 interest_names = '0'
@@ -168,9 +154,8 @@ old_mouse_y = 0
 
 high = ord('a')
 
-#exploring healing
+PLAYER_NAME = "player"
 
-E_HEAL_RATE = 6
 ################################
 # CLASSES                      #
 ################################
@@ -209,7 +194,7 @@ class Object:
     def __init__(self, x, y, char, name, color, blocks=False, always_visible=False, fighter=None, ai=None, item=None):
         self.name = name
         self.blocks = blocks
-	self.always_visible = always_visible
+        self.always_visible = always_visible
         self.x = x
         self.y = y
         self.char = char
@@ -300,19 +285,6 @@ class Object:
         #return the distance to given coordinates
         return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
-class Explheal:
-    def __init__(self, heal_rate=E_HEAL_RATE, explored=0):
-        self.heal_rate = heal_rate
-        self.explored = explored
-
-    def heal(self):
-        print('explheal.heal() called ' + str(self.explored))
-        if self.explored > 0 and player.fighter.hp < player.fighter.max_hp:
-            print('we gotta heal!')
-            heal = int(self.explored / E_HEAL_RATE)
-            player.fighter.heal(heal)
-        self.explored = 0
-
 ################################
 # COMPONENT CLASSES            #
 ################################
@@ -379,89 +351,6 @@ class Fighter:
         self.hp += amount
         if self.hp > self.max_hp:
             self.hp = self.max_hp
-
-
-'''    def attack(self, target):
-        #simple attack formula
-        to_hit = dice_roll(1,self.dexterity) * 1.0
-        to_dodge = dice_roll(1,target.fighter.dexterity) * target.fighter.stamina/target.fighter.max_stamina * 1.0
-        print('to_hit: ' + str(to_hit) + ' to_dodge: ' + str(to_dodge))
-
-        if int(to_hit) > int(to_dodge) and to_dodge/to_hit < 0.9 and to_dodge/to_hit > 0.1:
-            print(self.owner.name + ' HIT!')
-            damage = self.power - target.fighter.defense + dice_roll(1,6)
-            if int(damage) > 0:
-                message(self.owner.name.capitalize() + ' hits ' + target.name + ' for ' + str(int(damage)) + ' hit points!')
-                target.fighter.take_damage(int(damage))
-            else:
-                message(self.owner.name.capitalize() + ' hits ' + target.name + ' with no effect!')
-
-            if self.stamina - 0.5 <= 0:
-                self.stamina = 0
-            else:
-                self.stamina -= 0.5
-
-        elif int(to_hit) > int(to_dodge) and to_dodge/to_hit >= 0.9 or int(to_hit) == int(to_dodge):
-            print(self.owner.name + ' GRAZE!')
-            init_damage = self.power - target.fighter.defense + dice_roll(1,6)
-            damage = (init_damage + 0.5) * 0.5
-            if int(damage) > 0:
-                message(self.owner.name.capitalize() + ' grazes ' + target.name + ' for ' + str(int(damage)) + ' hit points!')
-                target.fighter.take_damage(int(damage))
-            else:
-                message(self.owner.name.capitalize() + ' grazes ' + target.name + ' but the attack has no effect!')
-            if self.stamina - 0.2 <= 0:
-                self.stamina = 0
-            else:
-                self.stamina -= 0.2
-
-        elif int(to_hit) > int(to_dodge) and to_dodge/to_hit < 0.1:
-            print(self.owner.name + ' CRITICAL!')
-            init_damage = self.power - target.fighter.defense + dice_roll(1,6)
-            damage = init_damage * 1.5
-
-            if int(damage) > 0:
-                message(self.owner.name.capitalize() + ' mauls ' + target.name + ' for ' + str(int(damage)) + ' hit points!')
-                target.fighter.take_damage(int(damage))
-            else:
-                message(self.owner.name.capitalize() + ' mauls ' + target.name + ' but the attack has no effect!')
-            if self.stamina - 0.5 <= 0:
-                self.stamina = 0
-            else:
-                self.stamina -= 0.5
-
-        elif int(to_dodge) > int(to_hit):
-            print(self.owner.name + ' MISS!')
-            ran_msg = dice_roll(1,2)
-            print(ran_msg)
-            if ran_msg == 1:
-                message(self.owner.name.capitalize() + ' misses ' + target.name + '!')
-            elif ran_msg == 2:
-                message(target.name.capitalize() + ' dodges ' + self.owner.name + "'s attack!")
-
-            if target.fighter.stamina - 1 <= 0:
-                target.fighter.stamina = 0
-            else:
-                target.fighter.stamina -= 1
-
-
-        else: print(self.owner.name + ' Something went wrong, dear sir!')
-'''
-
-#basic AI for monsters (unused since pathfinder)
-class BasicMonster:
-    def take_turn(self):
-    #a basic monster takes it's turn, if it's in player's fov, it can see the player
-        monster = self.owner
-        if libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
-
-            #move towards the player if far away
-            if monster.distance_to(player) >= 2:
-                monster.move_towards(player.x, player.y)
-
-            #if close enough (adjacent), attack the player (if he's still alive)
-            elif player.fighter.hp > 0:
-                monster.fighter.attack(player)
 
 #basic pathfinding AI for monsters
 class Pathfinder:
@@ -537,18 +426,6 @@ class ConfusedMonster:
             self.owner.ai = self.old_ai
             message('The ' + self.owner.name + ' does not look confused anymore!', libtcod.red)
         libtcod.map_set_properties(fov_map, self.owner.x, self.owner.y, not map[self.owner.x][self.owner.y].block_sight, False)
-
-
-class Gold: #pickable gold that doesnt go into inventory
-    def __init__(self, amount):
-        self.amount = amount
-
-    def pick_up(self):
-        global player_gold
-        #add to overall gold, remove from the map
-        player_gold = player_gold + self.amount
-        objects.remove(self.owner)
-        message('You picked up ' + str(self.amount) + ' pieces of gold!', libtcod.gold)
 
 #an item that can be picked up and used
 class Item:
@@ -736,29 +613,28 @@ def place_objects(room):
                 roll_monster=libtcod.random_get_int(0, 0, 100)
 
                 if roll_monster < 10:
-                    #create a goblin
+                    #create an ogre
                     fighter_component = Fighter(hp=10, stamina=10, defense=3, power=3, dexterity=4, death_function=monster_death)
                     ai_component = Pathfinder()
 
-                    monster = Object(x, y, 'g', 'goblin', libtcod.dark_red, blocks=True,
-                        fighter=fighter_component, ai=ai_component)
-                elif roll_monster < 10+45:
-                    #create a rat
-                    fighter_component = Fighter(hp=10, stamina=10, defense=1, power=1, dexterity=6,
-death_function=monster_death)
+                    monster = Object(x, y, 'O', 'ogre', libtcod.darker_red, blocks=True, fighter=fighter_component, ai=ai_component)
+                elif roll_monster < 10+55:
+                    #create a hurlock
+                    fighter_component = Fighter(hp=10, stamina=10, defense=1, power=1, dexterity=6, death_function=monster_death)
                     ai_component = Pathfinder()
 
-                    monster = Object(x, y, 'r', 'rat', libtcod.orange * libtcod.light_grey, blocks=True, fighter=fighter_component, ai=ai_component)
+                    monster = Object(x, y, 'H', 'hurlock', libtcod.dark_orange * libtcod.light_grey, blocks=True, fighter=fighter_component, ai=ai_component)
                 else:
-                    #create a kobold
+                    #create a genlock
                     fighter_component = Fighter(hp=10, stamina=10, defense=2, power=2, dexterity=5, death_function=monster_death)
                     ai_component = Pathfinder()
 
-                    monster = Object(x, y, 'k', 'kobold', libtcod.dark_green, blocks=True,
+                    monster = Object(x, y, 'g', 'genlock', libtcod.dark_green, blocks=True,
                         fighter=fighter_component, ai=ai_component)
 
                 objects.append(monster)
 
+"""
     #choose a random number of items
     num_items = libtcod.random_get_int(0, 0, MAX_ROOM_ITEMS)
 
@@ -807,6 +683,7 @@ death_function=monster_death)
             objects.append(item)
             item.send_to_back() #items appear below monsters/player/corpses
             item.always_visible = True #items are visible even out of FOV
+"""
 
 #rendering function
 def render_all():
@@ -817,9 +694,6 @@ def render_all():
     global color_light_ground
     global fov_recompute
     global highlight
-
-
-    print(fov_recompute)
 
     if fov_recompute:
        for y in range(MAP_HEIGHT):
@@ -853,9 +727,7 @@ def render_all():
                     else:
                         libtcod.console_put_char_ex(con, x, y, '.', libtcod.grey, HIGHLIGHT_COLOR)
                     #since visible, explore
-                    if map[x][y].explored == False:
-                        explheal.explored += 1
-                        map[x][y].explored = True
+                    map[x][y].explored = True
 
     #draw all objects in the list, except the player that is drawn AFTER everything else
     for object in objects:
@@ -905,27 +777,13 @@ def render_all():
 
     libtcod.console_print_ex(side, 1, 2, libtcod.BKGND_NONE, libtcod.LEFT, player.name.capitalize())
 
-    render_bar(1, 4, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp, libtcod.dark_red,
-libtcod.darkest_red, side)
-
-    render_bar(1, 5, BAR_WIDTH, 'ST', int(player.fighter.stamina), player.fighter.max_stamina, libtcod.dark_green, libtcod.darker_green, side)
+    render_bar(1, 4, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp, libtcod.dark_red, libtcod.darkest_red, side)
 
     libtcod.console_print_ex(side, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Strenght: ' +  str(player.fighter.power))
     libtcod.console_print_ex(side, 1, 8, libtcod.BKGND_NONE, libtcod.LEFT, 'Armor: ' + str(player.fighter.defense))
-    libtcod.console_print_ex(side, 1, 9, libtcod.BKGND_NONE, libtcod.LEFT, 'Dexterity: ' + str(player.fighter.dexterity))
     libtcod.console_print_ex(side, 1, 11, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon level: ' + str(d_level))
     libtcod.console_print_ex(side, 1, 12, libtcod.BKGND_NONE, libtcod.LEFT, 'Turns passed: ' + str(turns_passed))
-    libtcod.console_print_ex(side, 1, 13, libtcod.BKGND_NONE, libtcod.LEFT, 'Killing spree: ' + str(monsters_killed) + '/' + str(MONSTERS_TO_WIN))
-    libtcod.console_print_ex(side, 1, 14, libtcod.BKGND_NONE, libtcod.LEFT, 'Gold: ' + str(player_gold))
-
-    libtcod.console_print_ex(side, 1, 16, libtcod.BKGND_NONE, libtcod.LEFT, 'Equipment:')
-
-    if len(equipment) >= 1:
-        if equipment[0] is not None:
-            libtcod.console_print_ex(side, 1, 17, libtcod.BKGND_NONE, libtcod.LEFT, ' ' +  equipment[0].name)
-    if len(equipment) >= 2:
-        if equipment[1] is not None:
-            libtcod.console_print_ex(side, 1, 18, libtcod.BKGND_NONE, libtcod.LEFT, ' ' + equipment[1].name)
+    libtcod.console_print_ex(side, 1, 13, libtcod.BKGND_NONE, libtcod.LEFT, 'Killing spree: ' + str(monsters_killed))
 
     #blit contents to the root
     libtcod.console_blit(side, 0, 0, SIDE_WIDTH, SIDE_HEIGHT, 0, SIDE_X, SIDE_Y)
@@ -967,7 +825,7 @@ def handle_keys():
 
         else:
             #test for other keys
-
+            """
             if key_char == 'g':
                 pick_list = []
                 #pick up an item
@@ -1020,6 +878,8 @@ def handle_keys():
                     chosen_item.drop()
                     return True
 
+            """
+
             if key_char == 'o':
                 #find hole, and jump!
                 for object in objects:
@@ -1048,13 +908,6 @@ def player_move_or_attack(dx, dy):
     global fov_recompute, interest_cycle, didnttaketurn
 
     didnttaketurn = 0
-
-    stamina_turn = turns_passed * 0.5
-
-    if int(stamina_turn) == stamina_turn:
-        if not player.fighter.stamina + 0.25 >= player.fighter.max_stamina:
-            player.fighter.stamina += 0.25
-        else: player.fighter.stamina = player.fighter.max_stamina
 
     #the coordinates the player is moving to/attacking
     x = player.x + dx
@@ -1114,16 +967,11 @@ def monster_death(monster):
     monster.fighter = None
     monster.ai = None
     monster.name = 'remains of ' + monster.name
+    monster.always_visible = True
     monsters_killed += 1
     #make sure the spot where body lies is cleared for other monsters to move on
     libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True)
 
-    #drop gold (could be any loot)
-    item_component = Gold(libtcod.random_get_int(0, 1, 10))
-    loot  = Object(monster.x, monster.y, '*', 'gold', libtcod.gold, item=item_component)
-    objects.append(loot)
-
-    loot.send_to_back()
     monster.send_to_back()
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, console):
@@ -1546,7 +1394,7 @@ def new_game():
 
     #create a fighter component for the player, add a player @, state objects list
     fighter_component = Fighter(hp=20, stamina=10, defense=3, power=3, dexterity=4, death_function=player_death)
-    player = Object(0, 0, '@', 'player', libtcod.white, blocks=True, fighter=fighter_component)
+    player = Object(0, 0, "@", PLAYER_NAME, libtcod.silver * 1.5, blocks=True, fighter=fighter_component)
 
     #list for storing the game messages
     game_msgs = []
@@ -1563,8 +1411,6 @@ def new_game():
 
     turns_passed = 0
 
-    explheal = Explheal()
-
     #gen fov map
     initialize_fov()
 
@@ -1579,7 +1425,6 @@ def new_game():
     equipment = []
     weapon_wield = False
     armor_worn = False
-    player_gold = 0
 
     highlight = 0
     old_highlight = (0,0)
@@ -1643,20 +1488,11 @@ def play_game():
 
         #let monsters take their turn
         if game_state == 'playing' and player_action != 'didnt-take-turn':
-            explheal.heal()
             highlight = 0
             turns_passed += 1
             for object in objects:
                 if object.ai:
                     object.ai.take_turn()
-
-            if win_condition() == True:
-                if win_print == 0:
-                    message('You have sated your bloodlust.', libtcod.red)
-                    message('Congratulations, you have won the game!', libtcod.red)
-                    message('Press ESC to quit to main menu.', libtcod.red)
-                    win_print = 1
-                    game_state = 'win'
 
             interest_list()
             interest_cycle = 0
@@ -1666,7 +1502,7 @@ def play_game():
 ################################
 
 #font import, spawn window, window name, FPS (if real-time)
-libtcod.console_set_custom_font('main/data/Talryth_square_15x15.png', libtcod.FONT_LAYOUT_ASCII_INROW)
+libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 #libtcod.console_set_custom_font('cont/arial12x12.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
 libtcod.sys_set_fps(LIMIT_FPS)
