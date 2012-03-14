@@ -778,6 +778,7 @@ def render_all():
     libtcod.console_print_ex(side, 1, 2, libtcod.BKGND_NONE, libtcod.LEFT, player.name.capitalize())
 
     render_bar(1, 4, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp, libtcod.dark_red, libtcod.darkest_red, side)
+    render_bar(1, 5, BAR_WIDTH, 'POWER', player.fighter.power, player.fighter.power, libtcod.silver, libtcod.darkest_grey, side)
 
     libtcod.console_print_ex(side, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Strenght: ' +  str(player.fighter.power))
     libtcod.console_print_ex(side, 1, 8, libtcod.BKGND_NONE, libtcod.LEFT, 'Armor: ' + str(player.fighter.defense))
@@ -989,7 +990,7 @@ def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, c
 
     #text with values
     libtcod.console_set_default_foreground(panel, libtcod.white)
-    libtcod.console_print_ex(console, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER, name + ': ' + str(value) + '/' + str(maximum))
+    libtcod.console_print_ex(console, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER, name + ': ' + str(value))
 
 #msgs handling function
 def message(new_msg, color = libtcod.white):
@@ -1006,7 +1007,9 @@ def message(new_msg, color = libtcod.white):
 #return a string with objects names that are under the mouse
 def get_names_under_mouse():
     global highlight, old_highlight, old_mouse_x, old_mouse_y
-    mouse = libtcod.mouse_get_status()
+
+    mouse = libtcod.Mouse()
+    libtcod.sys_check_for_event(libtcod.EVENT_MOUSE_MOVE, libtcod.Key(), mouse)
     (x, y) = (mouse.cx, mouse.cy)
 
 
@@ -1101,9 +1104,15 @@ def menu(header, options, width):
 
     #present the console, and wait for a key-press
     libtcod.console_flush()
-    mouse = libtcod.mouse_get_status()
+
+    mouse = libtcod.Mouse()
+    key = libtcod.Key()
+    if not len(options) == 0:
+        libtcod.sys_check_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE, key, mouse)
+
     mouse_move = abs(mouse.dy) + abs(mouse.dx)
-    if mouse_move > 1:
+
+    if mouse_move > 2:
         if header_height != 0 and mouse.cy > y and mouse.cy < y+height:
             high = ord('a') + mouse.cy - y - header_height
             return 99
@@ -1114,8 +1123,6 @@ def menu(header, options, width):
     if mouse.lbutton_pressed:
         index = high - ord('a')
         if index >= 0 and index < len(options): return index
-
-    key = libtcod.console_check_for_keypress(True)
 
     if key.vk == libtcod.KEY_F11:
         libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
@@ -1139,9 +1146,6 @@ def menu(header, options, width):
             return 99
         else:
             return 99
-
-    if len(options) == 0:
-        libtcod.console_wait_for_keypress(True)
 
     #convert ASCII code to an index; if it corresponds to an option - return that
     index = key.c - ord('a')
@@ -1238,7 +1242,8 @@ def target_monster (max_range=None):
                 return obj
 
 def msgbox(text, width=50):
-    menu(text, [], width) #uses menu() as a message box
+    while libtcod.sys_check_for_event(libtcod.EVENT_KEY | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse()) == 0:
+        menu(text, [], width) #uses menu() as a message box
 
 #a simple win condition - kill enough monsters to win
 def win_condition():
@@ -1380,9 +1385,9 @@ def main_menu():
             new_game()
             play_game()
         if choice == 1:
-            msgbox('\n Not yet implemented.')
+            msgbox('\n Not yet implemented. \n', 22)
         if choice == 2:
-            msgbox('\n Not yet implemented. \n', 24)
+            msgbox('\n Not yet implemented. \n', 22)
         if choice == 3: #quit
             break
 
