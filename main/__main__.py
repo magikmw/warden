@@ -108,7 +108,7 @@ MAX_ROOMS = 100 #max rooms number per map
 #FOV settings
 FOV_ALGO = 0 #default libtcod FOV algorithm
 FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 8 #fov range
+TORCH_RADIUS = 10 #fov range
 
 #walls/floor colours
 #those are a bit misleading, check 'render_all()'
@@ -120,7 +120,7 @@ color_light_ground = libtcod.darkest_grey
 HIGHLIGHT_COLOR = libtcod.dark_grey
 
 #max number of monsters per room
-MAX_ROOM_MONSTERS = 3
+MAX_ROOM_MONSTERS = 10
 
 #max number of items spawned per room
 MAX_ROOM_ITEMS = 2
@@ -288,14 +288,13 @@ class Object:
 
 #fighting abilities class
 class Fighter:
-    def __init__(self, hp, stamina, defense, power, dexterity, death_function=None):
+    def __init__(self, hp, stamina, power, death_function=None):
         self.max_hp = hp
         self.hp = hp
         self.stamina = stamina
         self.max_stamina = stamina
-        self.defense = defense
         self.power = power
-        self.dexterity = dexterity
+        self.max_power = power
         self.death_function = death_function
 
     def take_damage(self, damage):
@@ -312,13 +311,13 @@ class Fighter:
     #cauchy distribution attack formula, should work neatly
     def attack(self, target):
         victim = target.fighter #lets give the target an easier callname
-	damage = 0
+        damage = 0
 
-        tohit = math.atan((float(self.power) - float(victim.defense)/(5.0)))/math.pi + 0.5
+        tohit = math.atan((float(self.power) - float(victim.power)/(5.0)))/math.pi + 0.5
         #main system function + crit bonus below
-        if self.power > victim.defense:
-            diff = self.power - victim.defense
-            crit_table = [2,3,5,8,13,21,34,55,89]
+        if self.power > victim.power:
+            diff = self.power - victim.power
+            crit_table = [2,3,5,8,13,21,34,55,89,95,100]
             crit_chance = crit_table[diff-1]
             if libtcod.random_get_int(0,0,100) < crit_chance:
                 tohit = tohit + float(crit_table[diff-1] * 0.01)
@@ -326,28 +325,56 @@ class Fighter:
         rand = libtcod.random_get_float(0, 0.0, 1.0) #get a random number to calculate the hit
 
         if rand <= tohit: #set damage
-            if tohit < 1.0:
-                damage = int((tohit - rand) * 10)
+            if self.owner.char == '@':
+                damage = 3
             else:
-                damage = int(tohit * 10)
-
-            if damage == 0: damage = damage + libtcod.random_get_int(0,0,1) #if the damage is 0 give a chance to inflict minimal
+                message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
+                target.fighter.tire_down()
 
         else:
-            message(self.owner.name.capitalize() + ' misses!')
+            message(self.owner.name.capitalize() + ' misses!', libtcod.light_blue)
+            if self.owner.char == '@':
+                self.tire_down()
 
         #apply damage
-        if damage > 0:
-            message(self.owner.name.capitalize() + ' hits ' + target.name + ' for ' + str(damage) + ' hit points!')
+        if damage == 3:
+            message(self.owner.name.capitalize() + ' slashes ' + target.name + '!')
             victim.take_damage(damage)
-        else:
-            message(self.owner.name.capitalize() + ' hits ' + target.name + ', but the attack has no effect!')
+
 
     def heal(self, amount):
         #heal by given amount without going over max
         self.hp += amount
         if self.hp > self.max_hp:
             self.hp = self.max_hp
+
+    def rest(self, amount):
+        #rest a given amount without going over max
+        if game_state == "playing":
+            self.stamina += amount
+            if self.stamina > self.max_stamina:
+                self.stamina = self.max_stamina
+
+    def tire_down(self):
+        if self.stamina - 5 < 0:
+            self.stamina = 0
+            message(self.owner.name.capitalize() + " is exhausted by the attacks!", libtcod.red)
+        else:
+            self.stamina -= 5
+
+        if self.stamina == 0:
+            if self.power - 1 < 0:
+                self.power = 0
+            else:
+                self.power -= 1
+
+            if self.power <= 0:
+                function = self.death_function
+                if function is not None:
+                    function(self.owner)
+            else:
+                message(self.owner.name.capitalize() + " is severly wounded by the attack, but fights on with new strenght!", libtcod.dark_purple)
+                self.stamina += 10
 
 #basic pathfinding AI for monsters
 class Pathfinder:
@@ -380,7 +407,7 @@ class Pathfinder:
                     else: #if it is blocked, move in random direction
                         dir = random_step()
                         monster.move(dir[0],dir[1])
-                elif player.fighter.hp > 0 and monster.is_cardinal(player.x, player.y) == True:
+                elif player.fighter.power > 0 and monster.is_cardinal(player.x, player.y) == True:
                 #if player is alive and in cardinal direction - attack
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
@@ -611,19 +638,19 @@ def place_objects(room):
 
                 if roll_monster < 10:
                     #create an ogre
-                    fighter_component = Fighter(hp=10, stamina=10, defense=3, power=3, dexterity=4, death_function=monster_death)
+                    fighter_component = Fighter(hp=4, stamina=10, power=12, death_function=monster_death)
                     ai_component = Pathfinder()
 
                     monster = Object(x, y, 'O', 'ogre', libtcod.darker_red, blocks=True, fighter=fighter_component, ai=ai_component)
                 elif roll_monster < 10+55:
                     #create a hurlock
-                    fighter_component = Fighter(hp=10, stamina=10, defense=1, power=1, dexterity=6, death_function=monster_death)
+                    fighter_component = Fighter(hp=3, stamina=10, power=8, death_function=monster_death)
                     ai_component = Pathfinder()
 
                     monster = Object(x, y, 'H', 'hurlock', libtcod.dark_orange * libtcod.light_grey, blocks=True, fighter=fighter_component, ai=ai_component)
                 else:
                     #create a genlock
-                    fighter_component = Fighter(hp=10, stamina=10, defense=2, power=2, dexterity=5, death_function=monster_death)
+                    fighter_component = Fighter(hp=3, stamina=10, power=6, death_function=monster_death)
                     ai_component = Pathfinder()
 
                     monster = Object(x, y, 'g', 'genlock', libtcod.dark_green, blocks=True,
@@ -747,8 +774,8 @@ def render_all():
 
     libtcod.console_print_ex(panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, player.name.capitalize())
 
-    render_bar(1, 3, BAR_WIDTH, 'HP', player.fighter.hp, player.fighter.max_hp, libtcod.dark_red, libtcod.darkest_red, panel)
-    render_bar(1, 4, BAR_WIDTH, 'POWER', player.fighter.power, player.fighter.power, libtcod.silver, libtcod.darkest_grey, panel)
+    render_bar(1, 3, BAR_WIDTH, 'STAMINA', player.fighter.stamina, player.fighter.max_stamina, libtcod.dark_red, libtcod.darkest_red, panel)
+    render_bar(1, 4, BAR_WIDTH, 'POWER', player.fighter.power, player.fighter.max_power, libtcod.silver, libtcod.darkest_grey * 0.5, panel)
 
     libtcod.console_print_ex(panel, 1, 6, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon level: ' + str(d_level))
     libtcod.console_print_ex(panel, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Turns passed: ' + str(turns_passed))
@@ -803,6 +830,7 @@ def handle_keys():
         elif key.vk == libtcod.KEY_KP5 or key.vk == libtcod.KEY_SPACE: #KP_5, SPACE - wait a turn
             player.move(0, 0)
             message('You wait a turn.', libtcod.white)
+            player.fighter.rest(5)
             fov_recompute = True
 
         else:
@@ -873,12 +901,17 @@ def handle_keys():
                 #screenshot, because I can
                 libtcod.sys_save_screenshot()
                 msgbox('\n Screenshot saved in game directory.\n', 37)
+                libtcod.sys_sleep_milli(1000)
 
             if key.vk == libtcod.KEY_TAB:
                 if not len(interest_names) < 1:
                     interest_tab(interest_pos[interest_cycle], interest_names[interest_cycle])
                 else:
                     message('There is nothing of interest around you.', libtcod.white)
+
+            if key.vk == libtcod.KEY_F1:
+                #[TODO] HELP SCREEN
+                pass
 
             if key_char == 'q':
                 message(str(dice_roll(1,6)))
@@ -998,7 +1031,7 @@ def get_names_under_mouse():
         map[old_highlight[0]][old_highlight[1]].highlight = None
 
     highlight = 0
-    if x <= 58 and y <= 41 and x >= 0 and y >= 0:
+    if x <= 79 and y <= 39 and x >= 0 and y >= 0:
         map[x][y].highlight = True
         highlight = 1
         old_highlight = (x,y)
@@ -1013,7 +1046,7 @@ def get_names_under_mouse():
 def get_names_player_tile():
     (x, y) = (player.x, player.y)
 
-    names = [obj.name for obj in objects if obj.x == x and obj.y == y and libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.name == 'player']
+    names = [obj.name for obj in objects if obj.x == x and obj.y == y and libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
 
     names = ', ' .join(names)
     return names.capitalize()
@@ -1021,9 +1054,9 @@ def get_names_player_tile():
 def interest_list():
     global interest_names, interest_pos
 
-    interest_names = [obj.name for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.name == 'player']
+    interest_names = [obj.name for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
 
-    interest_pos = [(obj.x, obj.y) for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.name == 'player']
+    interest_pos = [(obj.x, obj.y) for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
 
 def interest_tab(position, name):
     global interest_cycle, highlight, old_highlight_tab
@@ -1111,7 +1144,7 @@ def menu(header, options, width):
     if key.vk == libtcod.KEY_ESCAPE:
         return None
 
-    if key.vk == libtcod.KEY_ENTER:
+    if key.vk == libtcod.KEY_ENTER or key.vk == libtcod.KEY_KPENTER or key.vk == libtcod.KEY_SPACE:
         index = high - ord('a')
         if index >= 0 and index < len(options): return index
 
@@ -1376,10 +1409,14 @@ def main_menu():
 
 #new game initialisation
 def new_game():
-    global player, inventory, game_msgs, game_state, d_level, monsters_killed, win_print, equipment, weapon_wield, armor_worn, player_gold, highlight, old_highlight_tab, old_highlight, turns_passed, explheal
+    global player, inventory, game_msgs, game_state, d_level, monsters_killed, win_print, equipment, weapon_wield, armor_worn, player_gold, highlight, old_highlight_tab, old_highlight, turns_passed, explheal, didnttaketurn
+
+    PLAYER_NAME = input_box("Enter your name:", 30)
+    if PLAYER_NAME == "":
+        PLAYER_NAME = "player"
 
     #create a fighter component for the player, add a player @, state objects list
-    fighter_component = Fighter(hp=20, stamina=10, defense=3, power=3, dexterity=4, death_function=player_death)
+    fighter_component = Fighter(hp=20, stamina=100, power=10, death_function=player_death)
     player = Object(0, 0, "@", PLAYER_NAME, libtcod.silver * 1.5, blocks=True, fighter=fighter_component)
 
     #list for storing the game messages
@@ -1417,6 +1454,8 @@ def new_game():
     old_highlight_tab = (0,0)
     old_mouse_x = 0
     old_mouse_y = 0
+
+    didnttaketurn = 0
 
     #welcoming message
     message('Welcome, wanderer! Try not to die too early.', libtcod.red)
@@ -1490,6 +1529,73 @@ def play_game():
 
             interest_list()
             interest_cycle = 0
+
+def input_box(header, width=50):
+    timer = 0
+    command = ""
+    x = 1
+
+    #calculate total height for the header (auto-wraped), and one line per option
+    header_height = libtcod.console_get_height_rect(con, 0, 0, width, SCREEN_HEIGHT, header)
+    if header == '':
+        header_height = 0
+    height = header_height + 3
+    print(height)
+
+    #creates an off-screen console that represents the menu's window
+    in_box = libtcod.console_new(width, height)
+
+    #print the header with auto-wrap
+    libtcod.console_set_default_foreground(in_box, libtcod.white)
+    libtcod.console_print_rect_ex(in_box, 0, 0, width, height, libtcod.BKGND_NONE, libtcod.LEFT, header)
+    libtcod.console_set_default_background(in_box, HIGHLIGHT_COLOR)
+
+    while True:
+        libtcod.console_set_default_foreground(in_box, libtcod.white)
+        libtcod.console_set_default_background(in_box, HIGHLIGHT_COLOR)
+
+        timer += 1
+        if timer % (LIMIT_FPS / 4) == 0:
+            if timer % (LIMIT_FPS / 2) == 0:
+                timer = 0
+                libtcod.console_put_char(in_box, x, 2, "_")
+            else:
+                libtcod.console_put_char(in_box, x, 2, " ")
+
+        key = libtcod.Key()
+        libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS, key, libtcod.Mouse())
+
+        if key.vk == libtcod.KEY_BACKSPACE and x > 1:
+            libtcod.console_put_char(in_box, x, 2, " ")
+            command = command[:-1]
+            x -= 1
+        elif key.vk == libtcod.KEY_ENTER:
+            if len(command) > 10:
+                #msgbox("\n Chosen name is too long. \n", 28)
+                libtcod.console_set_default_foreground(in_box, libtcod.lighter_red)
+                libtcod.console_print_rect(in_box, 1, 1, width, 1, "Name too long. (max. 10)")
+                libtcod.console_set_default_foreground(in_box, libtcod.white)
+            else:
+                break
+        elif key.vk == libtcod.KEY_ESCAPE:
+            command = ""
+            break
+        elif key.c > 0:
+            letter = chr(key.c)
+            libtcod.console_put_char(in_box, x, 2, letter)
+            command += letter
+            x += 1
+
+        #blit "window" contents to the root console
+        x_con = SCREEN_WIDTH/2 - width/2
+        y_con = SCREEN_HEIGHT/2 - height/2
+        libtcod.console_blit(in_box, 0, 0, width, height, 0, x_con, y_con, 1.0, 0.7)
+
+        #present the console, and wait for a key-press
+        libtcod.console_flush()
+
+    print(command)
+    return command
 
 ################################
 # Initialization               #
