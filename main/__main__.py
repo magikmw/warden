@@ -1615,7 +1615,7 @@ def highscores():
             scores.append(line)
     except IOError:
         msgbox("\n No highscore to display. \n", 26)
-        libtcod.sys_sleep_milli(1500)
+        libtcod.sys_sleep_milli(1000)
         return None
 
     scores.sort(key=lambda x: int(x.split(' - ', 1)[0]), reverse = True)
@@ -1660,8 +1660,11 @@ def highscores():
 ################################
 
 #font import, spawn window, window name, FPS (if real-time)
-libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
-#libtcod.console_set_custom_font('cont/arial12x12.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+print(libtcod.sys_get_current_resolution()[1])
+if libtcod.sys_get_current_resolution()[1] < 768:
+    libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+else:
+    libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
 libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
