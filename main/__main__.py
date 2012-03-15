@@ -902,7 +902,6 @@ def handle_keys():
                 #screenshot, because I can
                 libtcod.sys_save_screenshot()
                 msgbox('\n Screenshot saved in game directory.\n', 37)
-                libtcod.sys_sleep_milli(1000)
 
             if key.vk == libtcod.KEY_TAB:
                 if not len(interest_names) < 1:
@@ -1122,8 +1121,7 @@ def menu(header, options, width):
 
     mouse = libtcod.Mouse()
     key = libtcod.Key()
-    if not len(options) == 0:
-        libtcod.sys_check_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE, key, mouse)
+    libtcod.sys_check_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE, key, mouse)
 
     mouse_move = abs(mouse.dy) + abs(mouse.dx)
 
@@ -1257,8 +1255,8 @@ def target_monster (max_range=None):
                 return obj
 
 def msgbox(text, width=50):
-    while libtcod.sys_check_for_event(libtcod.EVENT_KEY | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse()) == 0:
-        menu(text, [], width) #uses menu() as a message box
+    menu(text, [], width) #uses menu() as a message box
+    libtcod.sys_sleep_milli(1000)
 
 #a simple win condition - kill enough monsters to win
 def win_condition():
