@@ -373,7 +373,7 @@ class Fighter:
                 if function is not None:
                     function(self.owner)
             else:
-                message(self.owner.name.capitalize() + " is severly wounded by the attack, but fights on with new strenght!", libtcod.dark_purple)
+                message(self.owner.name.capitalize() + " is severly wounded by the attack, but fights on with new strength!", libtcod.dark_purple)
                 self.stamina += 10
 
 #basic pathfinding AI for monsters
