@@ -66,6 +66,8 @@
 #                                                           #
 #############################################################
 
+# [TODO] Add blood decals.
+
 ################################
 # BODY GOES BELOW              #
 
@@ -77,6 +79,7 @@
 import thirdparty.libtcodpy as libtcod #libtcod import, and rename
 import math #for math, duh
 import textwrap #for messages
+import datetime
 
 ################################
 # CONSTANTS                    #
@@ -84,7 +87,7 @@ import textwrap #for messages
 
 #tile
 GAME_TITLE = 'Warden'
-VERSION = '0.0.1'
+VERSION = '0.5.0'
 
 #DEBUG
 DEBUG_NO_FOG = False
@@ -101,14 +104,14 @@ MAP_WIDTH = 80
 MAP_HEIGHT = 40
 
 #min/max room dimensions (both horizontal and vertical)
-ROOM_MAX_SIZE = 9
+ROOM_MAX_SIZE = 8
 ROOM_MIN_SIZE = 5
-MAX_ROOMS = 100 #max rooms number per map
+MAX_ROOMS = 30 #max rooms number per map
 
 #FOV settings
 FOV_ALGO = 0 #default libtcod FOV algorithm
 FOV_LIGHT_WALLS = True
-TORCH_RADIUS = 10 #fov range
+TORCH_RADIUS = 8 #fov range
 
 #walls/floor colours
 #those are a bit misleading, check 'render_all()'
@@ -120,10 +123,10 @@ color_light_ground = libtcod.darkest_grey
 HIGHLIGHT_COLOR = libtcod.dark_grey
 
 #max number of monsters per room
-MAX_ROOM_MONSTERS = 10
+MAX_ROOM_MONSTERS = 5
 
 #max number of items spawned per room
-MAX_ROOM_ITEMS = 2
+MAX_ROOM_ITEMS = 1
 
 #GUI sizes and coordinates
 BAR_WIDTH = 20 #standard HP/MANA/whatever bar width
@@ -152,6 +155,8 @@ old_mouse_y = 0
 high = ord('a')
 
 PLAYER_NAME = "player"
+
+d_level = 1
 
 ################################
 # CLASSES                      #
@@ -327,6 +332,7 @@ class Fighter:
         if rand <= tohit: #set damage
             if self.owner.char == '@':
                 damage = 3
+                self.rest(5)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
                 target.fighter.tire_down()
@@ -393,7 +399,7 @@ class Pathfinder:
 
         if libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
             #player in view
-            self.alerted = 5 #stay alert for 5 turns
+            self.alerted = 15 #stay alert for 5 turns
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
             libtcod.dijkstra_compute(path_map, monster.x, monster.y)
@@ -484,9 +490,9 @@ class Item:
         if self.use_function is None:
             message('The ' + self.owner.name + ' cannot be used.')
         else:
-            if self.use_function() != 'cancelled':
-                if not self.owner.name == 'hole':
-                    inventory.remove(self.owner) #destroy after use, unless the action has been cancelled
+            self.use_function()
+            if self.owner.name is not 'hole':
+                objects.remove(self.owner)
 
     def wear(self):
         #call 'wear_function' if defined
@@ -538,7 +544,7 @@ def create_v_tunnel(y1, y2, x):
 
 #map generation function
 def make_map():
-    global map, objects, num_rooms, hole
+    global map, objects, num_rooms, hole, drop
 
     #the list of objects with just the player
     objects = [player]
@@ -551,8 +557,10 @@ def make_map():
     rooms = []
     num_rooms = 0
 
+    drop = False
+
     #room carving
-    for r in range(MAX_ROOMS):
+    for r in range(MAX_ROOMS + (10 * d_level)):
         #random width and height of the room
         w = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
         h = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
@@ -621,9 +629,9 @@ def make_map():
 
 #object generator function
 def place_objects(room):
-    global num_rooms
+    global num_rooms, drop
     #choose a random number of monsters
-    num_monsters = libtcod.random_get_int(0, 0, MAX_ROOM_MONSTERS)
+    num_monsters = libtcod.random_get_int(0, 2, MAX_ROOM_MONSTERS * d_level)
 
     if not num_rooms == 0:
         for i in range(num_monsters):
@@ -658,56 +666,27 @@ def place_objects(room):
 
                 objects.append(monster)
 
-"""
-    #choose a random number of items
-    num_items = libtcod.random_get_int(0, 0, MAX_ROOM_ITEMS)
+    if d_level != 1 and drop == False:
+        #choose a random number of items
+        num_items = libtcod.random_get_int(0, 0, MAX_ROOM_ITEMS)
 
-    for i in range(num_items):
-        #choose a random spot for an item
-        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
-        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
+        for i in range(num_items):
+            #choose a random spot for an item
+            x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
+            y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
 
-        #only place if the tile is not blocked already
-        if not is_blocked(x, y):
-            roll_item = libtcod.random_get_int(0, 0, 100)
-            if roll_item < 30:
-                #70% chance to create a healing potion
-                item_component = Item(use_function=cast_heal)
-                item = Object(x, y, '!', 'healing potion', libtcod.light_red, item=item_component)
+            #only place if the tile is not blocked already
+            if not is_blocked(x, y):
+                roll_item = libtcod.random_get_int(0, 0, 100)
+                if roll_item < 100:
+                    #50% chance to create a healing potion
+                    item_component = Item(use_function=cast_power)
+                    item = Object(x, y, '!', 'healing potion', libtcod.light_red, item=item_component)
 
-            elif roll_item < 30+10:
-                #create a lightning bolt scroll (10% chance)
-                item_component = Item(use_function=cast_lightning)
-
-                item = Object(x, y, '#', 'scroll of lightning', libtcod.light_yellow, item=item_component)
-
-            elif roll_item < 30+10+10:
-                #create a fireball scroll (10% chance)
-                item_component = Item(use_function=cast_fireball)
-
-                item = Object(x, y, '#', 'scroll of fireball', libtcod.light_yellow, item=item_component)
-
-            elif roll_item < 30+10+10+10:
-                #create a confuse scroll (10% chance)
-                item_component = Item(use_function=cast_confuse)
-
-                item = Object(x, y, '#', 'scroll of confusion', libtcod.light_yellow, item=item_component)
-
-            elif roll_item < 30+10+10+10+20:
-                #create a leather armor
-                item_component = Item(wear_function=wear_armor, remove_function=remove_armor, value=1)
-
-                item = Object(x, y, '{', 'leather armor', libtcod.light_orange, item=item_component)
-
-            else:
-                #create an iron armor
-                item_component = Item(wear_function=wield_weapon, remove_function=remove_weapon, value=1)
-
-                item = Object(x, y, '/', 'short sword', libtcod.white, item=item_component)
-            objects.append(item)
-            item.send_to_back() #items appear below monsters/player/corpses
-            item.always_visible = True #items are visible even out of FOV
-"""
+                    objects.append(item)
+                    item.send_to_back() #items appear below monsters/player/corpses
+                    item.always_visible = True #items are visible even out of FOV
+                    drop = True
 
 #rendering function
 def render_all():
@@ -775,12 +754,16 @@ def render_all():
 
     libtcod.console_print_ex(panel, 1, 1, libtcod.BKGND_NONE, libtcod.LEFT, player.name.capitalize())
 
-    render_bar(1, 3, BAR_WIDTH, 'STAMINA', player.fighter.stamina, player.fighter.max_stamina, libtcod.dark_red, libtcod.darkest_red, panel)
-    render_bar(1, 4, BAR_WIDTH, 'POWER', player.fighter.power, player.fighter.max_power, libtcod.silver, libtcod.darkest_grey * 0.5, panel)
+    libtcod.console_set_default_foreground(panel, libtcod.lightest_gray)
 
+    render_bar(1, 3, BAR_WIDTH, 'STAMINA', player.fighter.stamina, player.fighter.max_stamina, libtcod.dark_red, libtcod.darkest_red, panel)
+    render_bar(1, 4, BAR_WIDTH, 'POWER', player.fighter.power, player.fighter.power, libtcod.darkest_gray, libtcod.darkest_grey * 0.5, panel)
+
+
+    libtcod.console_set_default_foreground(panel, libtcod.lightest_gray)
     libtcod.console_print_ex(panel, 1, 6, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon level: ' + str(d_level))
-    libtcod.console_print_ex(panel, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Turns passed: ' + str(turns_passed))
-    libtcod.console_print_ex(panel, 1, 8, libtcod.BKGND_NONE, libtcod.LEFT, 'Killing spree: ' + str(monsters_killed))
+    libtcod.console_print_ex(panel, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Killing spree: ' + str(monsters_killed))
+    libtcod.console_print_ex(panel, 1, 8, libtcod.BKGND_NONE, libtcod.LEFT, 'Score: ' + str(monsters_killed * d_level))
 
     #print the game messages, one line at a time
     y = 2
@@ -831,7 +814,7 @@ def handle_keys():
         elif key.vk == libtcod.KEY_KP5 or key.vk == libtcod.KEY_SPACE: #KP_5, SPACE - wait a turn
             player.move(0, 0)
             message('You wait a turn.', libtcod.white)
-            player.fighter.rest(5)
+            player.fighter.rest(1)
             fov_recompute = True
 
         else:
@@ -930,9 +913,15 @@ def player_move_or_attack(dx, dy):
 
     #check for attackable objects
     target = None
+    item = None
     for object in objects:
         if object.fighter and object.x == x and object.y == y:
             target = object
+            break
+
+    for object in objects:
+        if object.item and object.x == x and object.y == y:
+            item = object
             break
 
     #attack if target found
@@ -942,6 +931,8 @@ def player_move_or_attack(dx, dy):
         didnttaketurn = 1
     else:
         player.move(dx, dy)
+        if item is not None:
+            item.item.use()
         items = get_names_player_tile()
         if len(items) >= 1:
             message('On the floor here: ' + str(items))
@@ -964,6 +955,15 @@ def is_blocked(x, y):
 #GAME OVER MAN, GAME OVER
 def player_death(player):
     global game_state
+    now = datetime.datetime.now()
+    date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
+    score = str(monsters_killed * d_level)
+
+    string = (score + " - " + player.name + " - " + date_time + "\n")
+    fileObj = open("main/data/highscores.dat", "a")
+    fileObj.write(string)
+    fileObj.close()
+
     message('You are dead! Press ESC to exit to main menu.', libtcod.red)
     game_state = 'dead'
 
@@ -991,7 +991,12 @@ def monster_death(monster):
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, console):
     #bar rendering function (hp/xp/mana, whatever)
-    bar_width = int(float(value) / maximum * total_width)
+    if maximum == 0:
+        bar_width = value
+    else:
+        bar_width = int(float(value) / maximum * total_width)
+
+    libtcod.console_set_default_foreground(panel, libtcod.lightest_gray)
 
     #render the background
     libtcod.console_set_default_background(console, back_color)
@@ -1081,7 +1086,7 @@ def interest_tab(position, name):
             interest_cycle += 1
 
 #menu function - initially for the inventory screen
-def menu(header, options, width):
+def menu(header, options, width, offset=0):
     global high
     #debug exception is you try to make a menu with more than 26 options
     if len(options) > 26: raise ValueError('Cannot have a menu with more than 26 options.')
@@ -1113,7 +1118,7 @@ def menu(header, options, width):
 
     #blit "window" contents to the root console
     x = SCREEN_WIDTH/2 - width/2
-    y = SCREEN_HEIGHT/2 - height/2
+    y = SCREEN_HEIGHT/2 - height/2 + offset
     libtcod.console_blit(window, 0, 0, width, height, 0, x, y, 1.0, 0.7)
 
     #present the console, and wait for a key-press
@@ -1339,6 +1344,11 @@ def cast_heal():
     message('Your wounds start to feel better!', libtcod.light_violet)
     player.fighter.heal(heal)
 
+def cast_power():
+    message('You drink the potion and feel the power in your veins!', libtcod.light_violet)
+    player.fighter.stamina = 100
+    player.fighter.power += 1
+
 #lightning spell that finds closest enemy within a maximum range and deals damage
 #[why] as with above, should be easy to tweak this to semi-random
 def cast_lightning():
@@ -1381,7 +1391,7 @@ def cast_fireball():
 ################################
 
 def main_menu():
-    img = libtcod.image_load('main/data/menu.png')
+    img = libtcod.image_load('main/data/warden.png')
 
     while not libtcod.console_is_window_closed():
         #show the background image, at twice the regular console resolution
@@ -1389,17 +1399,18 @@ def main_menu():
 
         #show the game's title, and credits
         libtcod.console_set_default_foreground(0, libtcod.light_grey)
-        libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT-7, libtcod.BKGND_NONE, libtcod.CENTER, 'By Michal Walczak')
+        libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT-2, libtcod.BKGND_NONE, libtcod.CENTER, 'By Michal Walczak')
 
         #show options and wait for the player's choice
-        choice = menu('   Choose an option:', ['Play a new game.', 'Highscores', 'Credits', 'Quit.'], 24)
+        choice = menu('   Choose an option:', ['Play a new game.', 'Highscores', 'Credits', 'Quit.'], 24, 5)
 
         if choice == 0: #new game
             new_game()
             play_game()
         if choice == 1:
-            msgbox('\n Not yet implemented. \n', 22)
+            highscores()
         if choice == 2:
+            # [TODO] Credits screen
             msgbox('\n Not yet implemented. \n', 22)
         if choice == 3: #quit
             break
@@ -1457,7 +1468,9 @@ def new_game():
     didnttaketurn = 0
 
     #welcoming message
-    message('Welcome, wanderer! Try not to die too early.', libtcod.red)
+    message('Dwarven guards close the gates to Deep Roads behind you...', libtcod.red)
+    message('Use arrows, numpad or vi-keys to move.', libtcod.lightest_gray)
+    message('Press F1 to display the help screen.', libtcod.lightest_gray)
 
 def new_level():
     global player, game_msgs, game_state, d_level
@@ -1520,8 +1533,9 @@ def play_game():
 
         #let monsters take their turn
         if game_state == 'playing' and player_action != 'didnt-take-turn':
+            if player.fighter.stamina > 0:
+                player.fighter.rest(-1)
             highlight = 0
-            turns_passed += 1
             for object in objects:
                 if object.ai:
                     object.ai.take_turn()
@@ -1539,7 +1553,6 @@ def input_box(header, width=50):
     if header == '':
         header_height = 0
     height = header_height + 3
-    print(height)
 
     #creates an off-screen console that represents the menu's window
     in_box = libtcod.console_new(width, height)
@@ -1593,8 +1606,54 @@ def input_box(header, width=50):
         #present the console, and wait for a key-press
         libtcod.console_flush()
 
-    print(command)
     return command
+
+def highscores():
+    scores = []
+    try:
+        for line in open("main/data/highscores.dat", "r"):
+            scores.append(line)
+    except IOError:
+        msgbox("\n No highscore to display. \n", 26)
+        libtcod.sys_sleep_milli(1500)
+        return None
+
+    scores.sort(key=lambda x: int(x.split(' - ', 1)[0]), reverse = True)
+
+    #creates an off-screen console that represents the menu's window
+    hiscr = libtcod.console_new(40, 14)
+
+    header = "HIGHSCORES"
+
+    #print the header with auto-wrap
+    libtcod.console_set_default_foreground(hiscr, libtcod.lightest_gray)
+    libtcod.console_print_rect_ex(hiscr, 14, 1, 40, 1, libtcod.BKGND_NONE, libtcod.LEFT, header)
+
+    #print the menu's options
+    y = 3
+    index = 1
+
+    for line in scores:
+        if index != 10:
+            index_p = "0"+str(index)
+        else:
+            index_p = index
+        text = '(' + str(index_p) + ') ' + line
+        libtcod.console_print_ex(hiscr, 0, y, libtcod.BKGND_NONE, libtcod.LEFT, text)
+        y += 1
+        index +=1
+        if index == 11:
+            break
+
+    #blit "window" contents to the root console
+    x = SCREEN_WIDTH/2 - 40/2
+    y = SCREEN_HEIGHT/2 - 14/2
+    libtcod.console_blit(hiscr, 0, 0, 40, 14, 0, x, y, 1.0, 0.9)
+
+    #present the console, and wait for a key-press
+    libtcod.console_flush()
+
+    libtcod.sys_wait_for_event(libtcod.EVENT_KEY | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
 
 ################################
 # Initialization               #
