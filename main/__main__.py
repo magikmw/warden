@@ -743,6 +743,7 @@ def render_all():
                             libtcod.console_put_char_ex(con, x, y, '.', libtcod.dark_sepia, color_dark_ground)
                 else:
                     #it's visible
+                    #[TODO] create FOV fall-off
                     if not map[x][y].highlight == True:
                         if wall:
                             libtcod.console_put_char_ex(con, x, y, '#', color_light_wall, libtcod.grey * 0.75)
