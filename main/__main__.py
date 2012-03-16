@@ -66,6 +66,10 @@
 #                                                           #
 #############################################################
 
+# [TODO] Add blade shards.
+# [TODO] Add the archdemon. Limit the dungeon to 10 lvls
+# [TODO] Make overime tiering affect power
+# [TODO] Increase the amount of stamina gained from kills
 # [TODO] Add blood decals.
 
 ################################
@@ -1660,7 +1664,6 @@ def highscores():
 ################################
 
 #font import, spawn window, window name, FPS (if real-time)
-print(libtcod.sys_get_current_resolution()[1])
 if libtcod.sys_get_current_resolution()[1] < 768:
     libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 else:
