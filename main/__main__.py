@@ -66,12 +66,7 @@
 #                                                           #
 #############################################################
 
-# [TODO] Add blade shards.
-# [TODO] Add the archdemon. Limit the dungeon to 10 lvls
-# [TODO] Make overime tiering affect power
-# [TODO] Increase the amount of stamina gained from kills
 # [TODO] Add blood decals.
-# [TODO] DEBUG GODMODE
 
 ################################
 # BODY GOES BELOW              #
@@ -96,6 +91,7 @@ VERSION = '0.5.0'
 
 #DEBUG
 DEBUG_NO_FOG = False
+DEBUG_GOD_MODE = False
 
 #FPS maximum
 LIMIT_FPS = 100
@@ -111,7 +107,7 @@ MAP_HEIGHT = 40
 #min/max room dimensions (both horizontal and vertical)
 ROOM_MAX_SIZE = 8
 ROOM_MIN_SIZE = 5
-MAX_ROOMS = 30 #max rooms number per map
+MAX_ROOMS = 40 #max rooms number per map
 
 #FOV settings
 FOV_ALGO = 0 #default libtcod FOV algorithm
@@ -162,6 +158,7 @@ high = ord('a')
 PLAYER_NAME = "player"
 
 d_level = 1
+got_key = False
 
 ################################
 # CLASSES                      #
@@ -337,15 +334,15 @@ class Fighter:
         if rand <= tohit: #set damage
             if self.owner.char == '@':
                 damage = 3
-                self.rest(5)
+                self.rest(10)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
-                target.fighter.tire_down()
+                target.fighter.tire_down(10)
 
         else:
             message(self.owner.name.capitalize() + ' misses!', libtcod.light_blue)
             if self.owner.char == '@':
-                self.tire_down()
+                self.tire_down(5)
 
         #apply damage
         if damage == 3:
@@ -366,12 +363,11 @@ class Fighter:
             if self.stamina > self.max_stamina:
                 self.stamina = self.max_stamina
 
-    def tire_down(self):
-        if self.stamina - 5 < 0:
+    def tire_down(self, amount):
+        if self.stamina - amount < 0:
             self.stamina = 0
-            message(self.owner.name.capitalize() + " is exhausted by the attacks!", libtcod.red)
         else:
-            self.stamina -= 5
+            self.stamina -= amount
 
         if self.stamina == 0:
             if self.power - 1 < 0:
@@ -384,8 +380,8 @@ class Fighter:
                 if function is not None:
                     function(self.owner)
             else:
-                message(self.owner.name.capitalize() + " is severly wounded by the attack, but fights on with new strength!", libtcod.dark_purple)
-                self.stamina += 10
+                message("The corruption and your wounds take their toll.", libtcod.dark_purple)
+                self.stamina += 70
 
 #basic pathfinding AI for monsters
 class Pathfinder:
@@ -475,7 +471,7 @@ class Item:
         if len(inventory) >= 26:
             message('Your inventory is full, cannot pick up ' + self.owner.name + '.' + 'Drop something to be able to pick it up.', libtcod.red)
         else:
-            if not self.owner.name == 'hole':
+            if not self.owner.name == 'passage':
                 inventory.append(self.owner)
                 objects.remove(self.owner)
                 message('You picked up a ' + self.owner.name + '!', libtcod.green)
@@ -496,7 +492,7 @@ class Item:
             message('The ' + self.owner.name + ' cannot be used.')
         else:
             self.use_function()
-            if self.owner.name is not 'hole':
+            if self.owner.name is not 'passage':
                 objects.remove(self.owner)
 
     def wear(self):
@@ -565,7 +561,7 @@ def make_map():
     drop = False
 
     #room carving
-    for r in range(MAX_ROOMS + (10 * d_level)):
+    for r in range(MAX_ROOMS):
         #random width and height of the room
         w = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
         h = libtcod.random_get_int(0, ROOM_MIN_SIZE, ROOM_MAX_SIZE)
@@ -624,19 +620,27 @@ def make_map():
             rooms.append(new_room)
             num_rooms += 1
 
-    #place the hole in the last room
-    item_component = Item(use_function=new_level)
+    if d_level is not 9:
 
-    hole = Object(new_x, new_y, 'O', 'hole', libtcod.yellow, item=item_component, always_visible=True)
+        #place the hole in the last room
+        item_component = Item(use_function=new_level)
 
-    objects.append(hole)
-    hole.send_to_back()
+        hole = Object(new_x, new_y, 'O', 'passage', libtcod.yellow, item=item_component, always_visible=True)
+
+        objects.append(hole)
+        hole.send_to_back()
+    else:
+        fighter_component = Fighter(hp=15, stamina=10, power=15, death_function=archdemon_death)
+        ai_component = Pathfinder()
+
+        monster = Object(x, y, 'A', 'Archdemon', libtcod.cyan, blocks=True, fighter=fighter_component, ai=ai_component)
+        objects.append(monster)
 
 #object generator function
 def place_objects(room):
     global num_rooms, drop
     #choose a random number of monsters
-    num_monsters = libtcod.random_get_int(0, 2, MAX_ROOM_MONSTERS * d_level)
+    num_monsters = libtcod.random_get_int(0, 2, MAX_ROOM_MONSTERS + d_level)
 
     if not num_rooms == 0:
         for i in range(num_monsters):
@@ -692,6 +696,20 @@ def place_objects(room):
                     item.send_to_back() #items appear below monsters/player/corpses
                     item.always_visible = True #items are visible even out of FOV
                     drop = True
+
+    if d_level != 9 and num_rooms == 5:
+        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
+        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
+
+        characters = ("`", "|", "-", "_", "'")
+        char = characters[libtcod.random_get_int(0, 0, len(characters) - 1)]
+
+        item_component = Item(use_function=get_shard)
+        item = Object(x, y, char, 'shard', libtcod.gold * libtcod.lightest_blue * 2, item=item_component)
+
+        objects.append(item)
+        item.send_to_back()
+        item.always_visible = True
 
 #rendering function
 def render_all():
@@ -797,7 +815,15 @@ def handle_keys():
     if key.vk == libtcod.KEY_F11:
         libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
     #exit game
-    elif key.vk == libtcod.KEY_ESCAPE:
+    elif key_char == "Q":
+        now = datetime.datetime.now()
+        date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
+        score = str(monsters_killed * d_level)
+
+        string = (score + " - " + player.name + " - " + date_time + "\n")
+        fileObj = open("main/data/highscores.dat", "a")
+        fileObj.write(string)
+        fileObj.close()
         return 'exit'
 
     #if the game is playing
@@ -901,9 +927,6 @@ def handle_keys():
                 #[TODO] HELP SCREEN
                 pass
 
-            if key_char == 'q':
-                message(str(dice_roll(1,6)))
-
             return 'didnt-take-turn' #This makes sure that monsters don't take turn if player did not.
 
 #movement and attacking
@@ -936,7 +959,12 @@ def player_move_or_attack(dx, dy):
         didnttaketurn = 1
     else:
         player.move(dx, dy)
-        if item is not None:
+        if item is not None and item.name is not 'passage':
+            item.item.use()
+        elif item is not None and item.name == 'passage' and got_key == False:
+            message("You feel the presence of a great artifact nearby.", libtcod.purple)
+            message("You cannot leave here without it.", libtcod.purple)
+        elif item is not None and item.name == 'passage' and got_key == True:
             item.item.use()
         items = get_names_player_tile()
         if len(items) >= 1:
@@ -970,6 +998,7 @@ def player_death(player):
     fileObj.close()
 
     message('You are dead! Press ESC to exit to main menu.', libtcod.red)
+    message('Check highscores if you have beaten the best yet!', libtcod.red)
     game_state = 'dead'
 
     #visual corpse change
@@ -993,6 +1022,37 @@ def monster_death(monster):
     libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True)
 
     monster.send_to_back()
+
+def archdemon_death(monster):
+
+    global game_state, monsters_killed
+
+    monsters_killed += 100
+
+    now = datetime.datetime.now()
+    date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
+    score = str(monsters_killed * d_level)
+
+    string = (score + " - " + player.name + " - " + date_time + "\n")
+    fileObj = open("main/data/highscores.dat", "a")
+    fileObj.write(string)
+    fileObj.close()
+
+    message(monster.name.capitalize() + ' is dead!', libtcod.red)
+    message("As you lay down your sword, the horde screams in panic.", libtcod.red)
+    message("Congratulations Warden!", libtcod.red)
+    message("You have succeded, when many has died.", libtcod.red)
+    message("Press ESC to exit to main menu, and check your score.")
+    message("")
+    monster.char = 'A'
+    monster.color = libtcod.darker_red
+    monster.blocks = False
+    monster.fighter = None
+    monster.ai = None
+    monster.name = 'remains of ' + monster.name
+    monster.always_visible = True
+
+    game_state = "win"
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, console):
     #bar rendering function (hp/xp/mana, whatever)
@@ -1390,6 +1450,13 @@ def cast_fireball():
             message('The ' + obj.name + ' gets burned for ' + str(FIREBALL_DAMAGE) + ' hit points.', libtcod.orange)
             obj.fighter.take_damage(FIREBALL_DAMAGE)
 
+def get_shard():
+    global got_key
+    if d_level is not 9:
+        message('You have found a fragment of an ancient weapon.', libtcod.light_violet)
+    else:
+        message('The sword shards magically reforge, and a powerful sword lays in your hands.', libtcod.light_violet)
+    got_key = True
 
 ################################
 # META-GAME FUNCTIONS          #
@@ -1407,7 +1474,7 @@ def main_menu():
         libtcod.console_print_ex(0, SCREEN_WIDTH/2, SCREEN_HEIGHT-2, libtcod.BKGND_NONE, libtcod.CENTER, 'By Michal Walczak')
 
         #show options and wait for the player's choice
-        choice = menu('   Choose an option:', ['Play a new game.', 'Highscores', 'Credits', 'Quit.'], 24, 5)
+        choice = menu('   Choose an option:', ['Play a new game.', 'Highscores', 'Help', 'Quit.'], 24, 5)
 
         if choice == 0: #new game
             new_game()
@@ -1415,8 +1482,7 @@ def main_menu():
         if choice == 1:
             highscores()
         if choice == 2:
-            # [TODO] Credits screen
-            msgbox('\n Not yet implemented. \n', 22)
+            help_screen()
         if choice == 3: #quit
             break
 
@@ -1428,7 +1494,7 @@ def new_game():
 
     PLAYER_NAME = input_box("Enter your name:", 30)
     if PLAYER_NAME == "":
-        PLAYER_NAME = "player"
+        PLAYER_NAME = "Warden"
 
     #create a fighter component for the player, add a player @, state objects list
     fighter_component = Fighter(hp=20, stamina=100, power=10, death_function=player_death)
@@ -1482,10 +1548,11 @@ def new_level():
 
     make_map()
     d_level += 1 #add one to the dungeon level
+    got_key = False
     initialize_fov()
     make_path_map()
     game_state='playing'
-    message('You jump into the hole to another level, and land with a *thump* on the floor below.', libtcod.red)
+    message('You follow some narrow tunnels deeper down. You hear earth rumbling behind you.', libtcod.red)
 
 #as name says
 def initialize_fov():
@@ -1538,8 +1605,9 @@ def play_game():
 
         #let monsters take their turn
         if game_state == 'playing' and player_action != 'didnt-take-turn':
-            if player.fighter.stamina > 0:
-                player.fighter.rest(-1)
+            if DEBUG_GOD_MODE == True:
+                player.fighter.stamina = 100
+            player.fighter.tire_down(1)
             highlight = 0
             for object in objects:
                 if object.ai:
@@ -1660,15 +1728,59 @@ def highscores():
 
     libtcod.sys_wait_for_event(libtcod.EVENT_KEY | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
 
+def help_screen():
+    halp = libtcod.console_new(70, 30)
+    header = "Warden Help Screen"
+
+    libtcod.console_set_default_foreground(halp, libtcod.lightest_gray)
+    libtcod.console_print_rect_ex(halp, 26, 1, 70, 1, libtcod.BKGND_NONE, libtcod.LEFT, header)
+
+    walloftext ="""
+  ----------
+  Keybindings:
+
+  Arrows / numpad / vi-keys   -   Arrows / numpad arrows / vi-keys
+  TAB                         -   Cycle interesting things on screen
+  Point with mouse            -   Display names of objects
+  F1                          -   Display help screen
+  F11                         -   Toggle fullscreen
+  SHIFT + Q                   -   Exit to main menu (no saving!)
+  SHIFT + P                   -   Take a screenshot
+
+  ----------
+  The objectives:
+  - Gain points by killing monsters and descending
+  - Seek out blade shards to gain access to the lower levels
+  - Kill the Archdemon on level 10
+  - Beat the highscore!
+
+  Main mechanics:
+  - Walk into things to attack (original idea! honest!)
+  - Your stamina drains quickly in combat and while waiting,
+      only killing monsters can replenish it with your rage
+  - Find health potions to regain some lost strenght
+  - Only cardinal directions are valid for movement"""
+
+    libtcod.console_print_rect_ex(halp, 0, 3, 0, 0, libtcod.BKGND_NONE, libtcod.LEFT, walloftext)
+
+    x = SCREEN_WIDTH/2 - 70/2
+    y = SCREEN_HEIGHT/2 - 30/2
+    libtcod.console_blit(halp, 0, 0, 70, 30, 0, x, y, 1.0, 1)
+
+
+    libtcod.console_flush()
+
+    libtcod.sys_wait_for_event(libtcod.EVENT_KEY | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
+
 ################################
 # Initialization               #
 ################################
 
 #font import, spawn window, window name, FPS (if real-time)
 if libtcod.sys_get_current_resolution()[1] < 768:
-    libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
-else:
     libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+else:
+    libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
 libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
