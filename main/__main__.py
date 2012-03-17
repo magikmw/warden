@@ -996,7 +996,7 @@ def player_death(player):
     fileObj.write(string)
     fileObj.close()
 
-    message('You are dead! Press ESC to exit to main menu.', libtcod.red)
+    message('You are dead! Press SHIFT + Q to exit to main menu.', libtcod.red)
     message('Check highscores if you have beaten the best yet!', libtcod.red)
     game_state = 'dead'
 
