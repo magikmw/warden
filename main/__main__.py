@@ -87,7 +87,7 @@ import datetime
 
 #tile
 GAME_TITLE = 'Warden'
-VERSION = '0.5.0'
+VERSION = '1.0.1'
 
 #DEBUG
 DEBUG_NO_FOG = False
@@ -409,6 +409,7 @@ class Pathfinder:
             if path_map is not False: #if there is a possible path
                 x,y = libtcod.dijkstra_get(path_map, 0) #get next tile from path
                 if monster.distance_to(player) > 1: #if player is away
+                    print("line 412: " +str(x) +","+str(y))
                     if not is_blocked(x,y): #if next tile is not blocked
                         monster.move_towards(x,y) #move to next tile
                     else: #if it is blocked, move in random direction
@@ -425,6 +426,7 @@ class Pathfinder:
             #move towards the player's last known position or stumble around if impossible
             if path_map is not False:
                 x,y = libtcod.dijkstra_get(path_map, 0)
+                print("line 428: " +str(x) +","+str(y))
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
