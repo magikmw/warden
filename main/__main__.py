@@ -1653,7 +1653,7 @@ def input_box(header, width=50):
             libtcod.console_put_char(in_box, x, 2, " ")
             command = command[:-1]
             x -= 1
-        elif key.vk == libtcod.KEY_ENTER:
+        elif key.vk == libtcod.KEY_ENTER or key.vk == libtcod.KEY_KPENTER:
             if len(command) > 10:
                 #msgbox("\n Chosen name is too long. \n", 28)
                 libtcod.console_set_default_foreground(in_box, libtcod.lighter_red)
