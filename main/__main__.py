@@ -94,7 +94,7 @@ DEBUG_NO_FOG = False
 DEBUG_GOD_MODE = False
 
 #FPS maximum
-LIMIT_FPS = 100
+LIMIT_FPS = 20
 
 #console size
 SCREEN_WIDTH = 80
