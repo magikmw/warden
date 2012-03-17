@@ -924,8 +924,7 @@ def handle_keys():
                     message('There is nothing of interest around you.', libtcod.white)
 
             if key.vk == libtcod.KEY_F1:
-                #[TODO] HELP SCREEN
-                pass
+                help_screen()
 
             return 'didnt-take-turn' #This makes sure that monsters don't take turn if player did not.
 
@@ -1721,21 +1720,26 @@ def highscores():
     #blit "window" contents to the root console
     x = SCREEN_WIDTH/2 - 40/2
     y = SCREEN_HEIGHT/2 - 14/2
-    libtcod.console_blit(hiscr, 0, 0, 40, 14, 0, x, y, 1.0, 0.9)
+    libtcod.console_blit(hiscr, 0, 0, 40, 14, 0, x, y, 1.0, 1.0)
 
     #present the console, and wait for a key-press
     libtcod.console_flush()
 
-    libtcod.sys_wait_for_event(libtcod.EVENT_KEY | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
+    libtcod.sys_sleep_milli(1000)
+
+    libtcod.sys_wait_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
 
 def help_screen():
     halp = libtcod.console_new(70, 30)
     header = "Warden Help Screen"
 
-    libtcod.console_set_default_foreground(halp, libtcod.lightest_gray)
-    libtcod.console_print_rect_ex(halp, 26, 1, 70, 1, libtcod.BKGND_NONE, libtcod.LEFT, header)
+    while True:
 
-    walloftext ="""
+        libtcod.console_set_default_foreground(halp, libtcod.lightest_gray)
+        libtcod.console_print_rect_ex(halp, 26, 1, 70, 1, libtcod.BKGND_NONE, libtcod.LEFT, header)
+
+        walloftext ="""
+                        More info in README.txt
   ----------
   Keybindings:
 
@@ -1761,16 +1765,19 @@ def help_screen():
   - Find health potions to regain some lost strenght
   - Only cardinal directions are valid for movement"""
 
-    libtcod.console_print_rect_ex(halp, 0, 3, 0, 0, libtcod.BKGND_NONE, libtcod.LEFT, walloftext)
+        libtcod.console_print_rect_ex(halp, 0, 3, 0, 0, libtcod.BKGND_NONE, libtcod.LEFT, walloftext)
 
-    x = SCREEN_WIDTH/2 - 70/2
-    y = SCREEN_HEIGHT/2 - 30/2
-    libtcod.console_blit(halp, 0, 0, 70, 30, 0, x, y, 1.0, 1)
+        x = SCREEN_WIDTH/2 - 70/2
+        y = SCREEN_HEIGHT/2 - 30/2
+        libtcod.console_blit(halp, 0, 0, 70, 30, 0, x, y, 1.0, 1)
 
 
-    libtcod.console_flush()
+        libtcod.console_flush()
 
-    libtcod.sys_wait_for_event(libtcod.EVENT_KEY | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
+        if libtcod.sys_wait_for_event(libtcod.EVENT_KEY_PRESS | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), False) != 0:
+            return False
+
+
 
 ################################
 # Initialization               #

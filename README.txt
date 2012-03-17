@@ -1,6 +1,10 @@
  Warden
  by Michał Walczak
 
+ magikmw@michalwalczak.eu (bug reports / suggestions / etc)
+
+ http://michalwalczak.eu/ (my blog)
+
  ----------
  A coffebreak roguelike created for the 7DRL Challenge 2012 (in ~63h of realtime).
 
@@ -8,7 +12,19 @@
  you step into the Deep Roads to take on your last quest - to destroy
  as many darkspawn as you can before collapsing to blows or the corruption
  that is running in your veins.
- The game is (as may be obvious to some) based on the fluff from Dragon Age: Origins by BioWare.
+ The game is (as may be obvious to some) based on the fluff from
+    Dragon Age: Origins by BioWare.
+
+ ----------
+ HOW TO RUN:
+
+ Windows:
+ run warden_win.bat
+
+ Linux / MacOSX:
+ dependencies: SDL
+
+ run warden_linux.sh
 
  ----------
  Keybindings:
@@ -32,17 +48,15 @@
  - Walk into things to attack (original idea! honest!)
  - Your stamina drains quickly in combat and while waiting,
      only killing monsters can replenish it with your rage
- - Find health potions to regain some lost strenght
+ - Find health potions to regain some lost strength
  - Only cardinal directions are valid for movement
 
  ----------
  Thanks:
 
  Sara                            -   for menu background and understanding
-                                         my 7 day abscence in mind and body
+                                         my 7 day absence in mind and body
  #rgrd channel @ quakenet.org    -   for ideas, motivation, and being awesome
  Creators of libTCOD             -   for a cool library
  Jotaf                           -   for his great tutorial on roguebasin.com
 
- More information:
- http://michalwalczak.eu/
