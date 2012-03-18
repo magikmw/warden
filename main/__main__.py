@@ -1768,7 +1768,7 @@ def help_screen():
   - Walk into things to attack (original idea! honest!)
   - Your stamina drains quickly in combat and while waiting,
       only killing monsters can replenish it with your rage
-  - Find health potions to regain some lost strenght
+  - Find health potions to regain some lost strength
   - Only cardinal directions are valid for movement"""
 
         libtcod.console_print_rect_ex(halp, 0, 3, 0, 0, libtcod.BKGND_NONE, libtcod.LEFT, walloftext)
