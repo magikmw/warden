@@ -976,7 +976,11 @@ def player_move_or_attack(dx, dy):
 #function that checks if the tile is blocked
 def is_blocked(x, y):
     #check map tile first
-    if map[x][y].blocked:
+    try:
+        #[XXX] Hack for windows, seems the libtcod.dll is broken and throws up y in range of couple million
+        if map[x][y].blocked:
+            return True
+    except IndexError:
         return True
 
     #than check for blocking objects
