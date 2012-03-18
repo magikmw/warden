@@ -48,7 +48,7 @@
  - Walk into things to attack (original idea! honest!)
  - Your stamina drains quickly in combat and while waiting,
      only killing monsters can replenish it with your rage
- - Find health potions to regain some lost strength
+ - Find health potions to regain some lost strenght
  - Only cardinal directions are valid for movement
 
  ----------
