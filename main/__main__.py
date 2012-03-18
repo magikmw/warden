@@ -993,14 +993,6 @@ def is_blocked(x, y):
 #GAME OVER MAN, GAME OVER
 def player_death(player):
     global game_state
-    now = datetime.datetime.now()
-    date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
-    score = str(monsters_killed * d_level)
-
-    string = (score + " - " + player.name + " - " + date_time + "\n")
-    fileObj = open("main/data/highscores.dat", "a")
-    fileObj.write(string)
-    fileObj.close()
 
     message('You are dead! Press SHIFT + Q to exit to main menu.', libtcod.red)
     message('Check highscores if you have beaten the best yet!', libtcod.red)
