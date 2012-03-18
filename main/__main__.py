@@ -67,6 +67,15 @@
 #############################################################
 
 # [TODO] Add blood decals.
+# [TODO] "Is there shard" indicator
+# [FIX] Shards not generating properly on every level?
+# [FIX] Adjust keyboard repeat? Keys not reged
+# [TODO] Give 3-5 different font sizes and means to change them
+# [XXX] Remove mouselook
+# [TODO] Balance tweaks
+# [FIX] Check why the game crashes on toggle fulscreen
+# [XXX] Instead of SHIFT+Q, timer on the death screen
+# [FIX] srd| reported interface bork
 
 ################################
 # BODY GOES BELOW              #
@@ -1026,20 +1035,11 @@ def archdemon_death(monster):
 
     monsters_killed += 100
 
-    now = datetime.datetime.now()
-    date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
-    score = str(monsters_killed * d_level)
-
-    string = (score + " - " + player.name + " - " + date_time + "\n")
-    fileObj = open("main/data/highscores.dat", "a")
-    fileObj.write(string)
-    fileObj.close()
-
     message(monster.name.capitalize() + ' is dead!', libtcod.red)
     message("As you lay down your sword, the horde screams in panic.", libtcod.red)
     message("Congratulations Warden!", libtcod.red)
-    message("You have succeded, when many has died.", libtcod.red)
-    message("Press ESC to exit to main menu, and check your score.")
+    message("You have succeded, when many have died.", libtcod.red)
+    message("Press SHIFT+Q to exit to main menu, and check your score.")
     message("")
     monster.char = 'A'
     monster.color = libtcod.darker_red
