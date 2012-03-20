@@ -73,9 +73,13 @@
 # [TODO] Give 3-5 different font sizes and means to change them
 # [XXX] Remove mouselook
 # [TODO] Balance tweaks
-# [FIX] Check why the game crashes on toggle fulscreen
-# [XXX] Instead of SHIFT+Q, timer on the death screen
+#       * reduce shards to 5 per game
+#       * change distribution of monster kind per lv
+# [TODO] Improve and consolidate UI/messages and their colors
+# [FIX] Check why the game crashes on toggle fulscreen [Font sizes]
+# [TODO] ESC to exit, prompt menu
 # [FIX] srd| reported interface bork
+# [TODO] Flash on hit
 
 ################################
 # BODY GOES BELOW              #
@@ -1038,7 +1042,7 @@ def archdemon_death(monster):
     message(monster.name.capitalize() + ' is dead!', libtcod.red)
     message("As you lay down your sword, the horde screams in panic.", libtcod.red)
     message("Congratulations Warden!", libtcod.red)
-    message("You have succeded, when many have died.", libtcod.red)
+    message("With your death you bought some time for the living.", libtcod.red)
     message("Press SHIFT+Q to exit to main menu, and check your score.")
     message("")
     monster.char = 'A'
