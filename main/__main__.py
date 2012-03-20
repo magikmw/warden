@@ -845,10 +845,10 @@ def handle_keys():
     if game_state == 'playing':
         #movement keys
         #numpad, arrows, vim
-        if key.vk == libtcod.KEY_KP8 or key.vk == libtcod.KEY_UP or key_char == 'j':
+        if key.vk == libtcod.KEY_KP8 or key.vk == libtcod.KEY_UP or key_char == 'k':
             player_move_or_attack(0, -1)
 
-        elif key.vk == libtcod.KEY_KP2 or key.vk == libtcod.KEY_DOWN or key_char == 'k':
+        elif key.vk == libtcod.KEY_KP2 or key.vk == libtcod.KEY_DOWN or key_char == 'j':
             player_move_or_attack(0, 1)
 
         elif key.vk == libtcod.KEY_KP4 or key.vk == libtcod.KEY_LEFT or key_char == 'h':
