@@ -68,15 +68,14 @@
 
 # [TODO] Add blood decals.
 # [TODO] "Is there shard" indicator
-# [FIX] Shards not generating properly on every level?
 # [FIX] Adjust keyboard repeat? Keys not reged
-# [TODO] Give 3-5 different font sizes and means to change them
+# [TODO] Allow the player to change fonts on the fly
 # [XXX] Remove mouselook
 # [TODO] Balance tweaks
 #       * reduce shards to 5 per game
 #       * change distribution of monster kind per lv
+# [FIX] Shards not generating properly on every level?
 # [TODO] Improve and consolidate UI/messages and their colors
-# [FIX] Check why the game crashes on toggle fulscreen [Font sizes]
 # [TODO] ESC to exit, prompt menu
 # [FIX] srd| reported interface bork
 # [TODO] Flash on hit
@@ -422,7 +421,6 @@ class Pathfinder:
             if path_map is not False: #if there is a possible path
                 x,y = libtcod.dijkstra_get(path_map, 0) #get next tile from path
                 if monster.distance_to(player) > 1: #if player is away
-                    print("line 412: " +str(x) +","+str(y))
                     if not is_blocked(x,y): #if next tile is not blocked
                         monster.move_towards(x,y) #move to next tile
                     else: #if it is blocked, move in random direction
@@ -439,7 +437,6 @@ class Pathfinder:
             #move towards the player's last known position or stumble around if impossible
             if path_map is not False:
                 x,y = libtcod.dijkstra_get(path_map, 0)
-                print("line 428: " +str(x) +","+str(y))
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
@@ -1786,7 +1783,12 @@ def help_screen():
 ################################
 
 #font import, spawn window, window name, FPS (if real-time)
-if libtcod.sys_get_current_resolution()[1] < 768:
+res_height = libtcod.sys_get_current_resolution()[1]
+if res_height <= 550:
+    libtcod.console_set_custom_font('main/data/terminal8x8_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+elif res_height <= 600:
+    libtcod.console_set_custom_font('main/data/terminal10x10_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+elif res_height <= 900:
     libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 else:
     libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
