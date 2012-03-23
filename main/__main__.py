@@ -74,7 +74,9 @@
 #       * reduce shards to 5 per game (not generating now on every level?)
 #       * levels without shards contain unbeatable archdemon
 #       * change distribution of monster kind per lv
+#       * reduce the size of levels
 # [TODO] Improve and consolidate UI/messages and their colors
+# [XXX] Side panel for stats, reduce size of screen altogether?
 # [FIX] srd| reported interface bork
 # [TODO] Flash on hit
 
@@ -1837,6 +1839,9 @@ libtcod.sys_set_fps(LIMIT_FPS)
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
 #bottom panel console
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
+
+#keyboard delay, not sure if it will help
+libtcod.console_set_keyboard_repeat(1000, 200)
 
 high = ord('a')
 main_menu()
