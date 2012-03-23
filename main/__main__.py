@@ -71,11 +71,10 @@
 # [FIX] Adjust keyboard repeat? Keys not reged
 # [XXX] Remove mouselook
 # [TODO] Balance tweaks
-#       * reduce shards to 5 per game
+#       * reduce shards to 5 per game (not generating now on every level?)
+#       * levels without shards contain unbeatable archdemon
 #       * change distribution of monster kind per lv
-# [FIX] Shards not generating properly on every level?
 # [TODO] Improve and consolidate UI/messages and their colors
-# [TODO] ESC to exit, prompt menu
 # [FIX] srd| reported interface bork
 # [TODO] Flash on hit
 
@@ -826,16 +825,22 @@ def handle_keys():
     if key.vk == libtcod.KEY_F11:
         libtcod.console_set_fullscreen(not libtcod.console_is_fullscreen())
     #exit game
-    elif key_char == "Q":
-        now = datetime.datetime.now()
-        date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
-        score = str(monsters_killed * d_level)
+    elif key.vk == libtcod.KEY_ESCAPE:
 
-        string = (score + " - " + player.name + " - " + date_time + "\n")
-        fileObj = open("main/data/highscores.dat", "a")
-        fileObj.write(string)
-        fileObj.close()
-        return 'exit'
+        choice = menu('   Do you really want to \n return to main menu?', ['No.', 'Yes, quit.'], 24)
+
+        if choice == 0: #Don't quit
+            pass
+        elif choice == 1: #quit and save the score
+            now = datetime.datetime.now()
+            date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
+            score = str(monsters_killed * d_level)
+
+            string = (score + " - " + player.name + " - " + date_time + "\n")
+            fileObj = open("main/data/highscores.dat", "a")
+            fileObj.write(string)
+            fileObj.close()
+            return 'exit'
 
     #use pgup and pgdown to change font size on the fly
     elif key.vk == libtcod.KEY_PAGEUP:
@@ -1034,7 +1039,7 @@ def is_blocked(x, y):
 def player_death(player):
     global game_state
 
-    message('You are dead! Press SHIFT + Q to exit to main menu.', libtcod.red)
+    message('You are dead! Press ESCAPE to exit to main menu.', libtcod.red)
     message('Check highscores if you have beaten the best yet!', libtcod.red)
     game_state = 'dead'
 
@@ -1070,7 +1075,7 @@ def archdemon_death(monster):
     message("As you lay down your sword, the horde screams in panic.", libtcod.red)
     message("Congratulations Warden!", libtcod.red)
     message("With your death you bought some time for the living.", libtcod.red)
-    message("Press SHIFT+Q to exit to main menu, and check your score.")
+    message("Press ESCAPE to quit and check your score.")
     message("")
     monster.char = 'A'
     monster.color = libtcod.darker_red
@@ -1773,11 +1778,12 @@ def help_screen():
   Keybindings:
 
   Arrows / numpad / vi-keys   -   Arrows / numpad arrows / vi-keys
+  SPACE / .                   -   Wait a turn
   TAB                         -   Cycle interesting things on screen
   Point with mouse            -   Display names of objects
   F1                          -   Display help screen
   F11                         -   Toggle fullscreen
-  SHIFT + Q                   -   Exit to main menu (no saving!)
+  ESCAPE                      -   Quit to main menu (confirm)
   SHIFT + P                   -   Take a screenshot
 
   ----------
