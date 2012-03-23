@@ -30,6 +30,7 @@
  Keybindings:
 
  Arrows / numpad / vi-keys   -   Arrows / numpad arrows / vi-keys
+ Space / .                   -   Wait a turn
  TAB                         -   Cycle interesting things on screen
  Point with mouse            -   Display names of objects
  F1                          -   Display help screen
