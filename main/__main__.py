@@ -69,7 +69,6 @@
 # [TODO] Add blood decals.
 # [TODO] "Is there shard" indicator
 # [FIX] Adjust keyboard repeat? Keys not reged
-# [TODO] Allow the player to change fonts on the fly
 # [XXX] Remove mouselook
 # [TODO] Balance tweaks
 #       * reduce shards to 5 per game
@@ -818,7 +817,7 @@ def render_all():
 
 #keystrokes function
 def handle_keys():
-    global fov_recompute, pick_list, high
+    global fov_recompute, pick_list, high, init_font
 
     key = libtcod.console_check_for_keypress(libtcod.KEY_PRESSED)
     key_char = chr(key.c)
@@ -837,6 +836,37 @@ def handle_keys():
         fileObj.write(string)
         fileObj.close()
         return 'exit'
+
+    #use pgup and pgdown to change font size on the fly
+    elif key.vk == libtcod.KEY_PAGEUP:
+        if init_font == 16:
+            pass
+        elif init_font == 12:
+            init_font = 16
+            libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+        elif init_font == 10:
+            init_font = 12
+            libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+        elif init_font == 8:
+            init_font = 10
+            libtcod.console_set_custom_font('main/data/terminal10x10_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+        else:
+            print("Well, obviously there is an error in handle_keys")
+
+    elif key.vk == libtcod.KEY_PAGEDOWN:
+        if init_font == 8:
+            pass
+        elif init_font == 10:
+            init_font = 8
+            libtcod.console_set_custom_font('main/data/terminal8x8_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+        elif init_font == 12:
+            init_font = 10
+            libtcod.console_set_custom_font('main/data/terminal10x10_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+        elif init_font == 16:
+            init_font = 12
+            libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+        else:
+            print("Well, obviously there is an error in handle_keys")
 
     #if the game is playing
     if game_state == 'playing':
@@ -1785,12 +1815,16 @@ def help_screen():
 #font import, spawn window, window name, FPS (if real-time)
 res_height = libtcod.sys_get_current_resolution()[1]
 if res_height <= 550:
+    init_font = 8
     libtcod.console_set_custom_font('main/data/terminal8x8_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 600:
+    init_font = 10
     libtcod.console_set_custom_font('main/data/terminal10x10_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 900:
+    init_font = 12
     libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 else:
+    init_font = 16
     libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
 libtcod.sys_set_fps(LIMIT_FPS)
