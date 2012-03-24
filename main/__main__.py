@@ -98,7 +98,7 @@ import datetime
 
 #tile
 GAME_TITLE = 'Warden'
-VERSION = '1.1'
+VERSION = '1.1.1'
 
 #DEBUG
 DEBUG_NO_FOG = False
@@ -361,6 +361,9 @@ class Fighter:
             elif self.owner.char == 'A' and d_level < 10:
                 message("Archdemon drains your lifeforce!", libtcod.light_blue)
                 target.fighter.tire_down(100)
+            elif self.owner.char == 'A' and d_level == 10:
+                message("The Archdemon cripples you!", libtcod.light_blue)
+                target.figther.tire_down(25)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
                 target.fighter.tire_down(10)
@@ -1351,7 +1354,7 @@ def menu(header, options, width, offset=0):
 
     mouse = libtcod.Mouse()
     key = libtcod.Key()
-    libtcod.sys_check_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE, key, mouse)
+    libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS | libtcod.EVENT_MOUSE, key, mouse)
 
     mouse_move = abs(mouse.dy) + abs(mouse.dx)
 
