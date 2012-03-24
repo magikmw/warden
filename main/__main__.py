@@ -66,19 +66,21 @@
 #                                                           #
 #############################################################
 
+# 1.1
+# [TODO] Improve and consolidate UI/messages and their colors
+
+# Pretty stuff
+# [TODO] Flash on hit
 # [TODO] Add blood decals.
-# [TODO] "Is there shard" indicator
-# [FIX] Adjust keyboard repeat? Keys not reged
-# [XXX] Remove mouselook
+
+# WAT
 # [TODO] Balance tweaks
-#       * reduce shards to 5 per game (not generating now on every level?)
-#       * levels without shards contain unbeatable archdemon
 #       * change distribution of monster kind per lv
 #       * reduce the size of levels
-# [TODO] Improve and consolidate UI/messages and their colors
 # [XXX] Side panel for stats, reduce size of screen altogether?
+# [FIX] Adjust keyboard repeat? Keys not reged
 # [FIX] srd| reported interface bork
-# [TODO] Flash on hit
+# [XXX] Remove mouselook
 
 ################################
 # BODY GOES BELOW              #
@@ -168,9 +170,13 @@ old_mouse_y = 0
 high = ord('a')
 
 PLAYER_NAME = "player"
+NUM_SHARDS = 4
+NUM_POTIONS = 5
+NUM_ARCH = 2
+lv_feeling = 'none'
 
 d_level = 1
-got_key = False
+got_key = True
 
 ################################
 # CLASSES                      #
@@ -290,6 +296,11 @@ class Object:
             libtcod.console_put_char_ex(con, self.x, self.y, '.', libtcod.grey, color_light_ground)
         elif libtcod.map_is_in_fov(fov_map, self.x, self.y) and map[self.x][self.y].highlight == True:
             libtcod.console_put_char_ex(con, self.x, self.y, '.', libtcod.grey, HIGHLIGHT_COLOR)
+        elif self.name == 'Archdemon':
+            if map[self.x][self.y].explored == True:
+                libtcod.console_put_char_ex(con, self.x, self.y, '.', libtcod.dark_sepia, color_dark_ground)
+            else:
+                libtcod.console_put_char_ex(con, self.x, self.y, ' ', libtcod.black, libtcod.black)
 
     def send_to_back(self):
         #make this obcject drawn first so it appears beneath everything else
@@ -336,10 +347,13 @@ class Fighter:
         #main system function + crit bonus below
         if self.power > victim.power:
             diff = self.power - victim.power
-            crit_table = [2,3,5,8,13,21,34,55,89,95,100]
-            crit_chance = crit_table[diff-1]
-            if libtcod.random_get_int(0,0,100) < crit_chance:
-                tohit = tohit + float(crit_table[diff-1] * 0.01)
+            if diff > 11:
+                tohit = 1.1
+            else:
+                crit_table = [2,3,5,8,13,21,34,55,89,95,100]
+                crit_chance = crit_table[diff-1]
+                if libtcod.random_get_int(0,0,100) < crit_chance:
+                    tohit = tohit + float(crit_table[diff-1] * 0.01)
 
         rand = libtcod.random_get_float(0, 0.0, 1.0) #get a random number to calculate the hit
 
@@ -347,14 +361,15 @@ class Fighter:
             if self.owner.char == '@':
                 damage = 3
                 self.rest(10)
+            elif self.owner.char == 'A' and d_level < 10:
+                message("Archdemon drains your lifeforce!", libtcod.red)
+                target.fighter.tire_down(100)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
                 target.fighter.tire_down(10)
 
         else:
             message(self.owner.name.capitalize() + ' misses!', libtcod.light_blue)
-            if self.owner.char == '@':
-                self.tire_down(5)
 
         #apply damage
         if damage == 3:
@@ -406,10 +421,6 @@ class Pathfinder:
         monster = self.owner
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True) #unlock own tile before move
 
-        if not monster.fighter.stamina + 0.1 >= monster.fighter.max_stamina:
-            monster.fighter.stamina += 0.1
-        else: monster.fighter.stamina = monster.fighter.max_stamina
-
         if libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
             #player in view
             self.alerted = 15 #stay alert for 5 turns
@@ -432,6 +443,55 @@ class Pathfinder:
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
             self.alerted = self.alerted - 1 #decrease the alert level
+            libtcod.dijkstra_compute(path_map, monster.x, monster.y)
+            libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
+            #move towards the player's last known position or stumble around if impossible
+            if path_map is not False:
+                x,y = libtcod.dijkstra_get(path_map, 0)
+                if not is_blocked(x,y):
+                    monster.move_towards(x,y)
+                else:
+                    dir = random_step()
+                    monster.move(dir[0],dir[1])
+
+        else: #move in random direction if left all alone
+            dir = random_step()
+            monster.move(dir[0],dir[1])
+
+        #finally, block the tile so other monsters can path around it
+        libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, False)
+
+class Pathfinder_arch:
+    def __init__(self, alerted = 1, last_x=None, last_y=None):
+        self.alerted = alerted
+        self.last_x = last_x
+        self.last_y = last_y
+
+    def take_turn(self):
+        monster = self.owner
+        libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True) #unlock own tile before move
+        self.owner.clear()
+
+        if libtcod.map_is_in_fov(fov_map, monster.x, monster.y) or self.alerted > 0:
+            #player in view
+            self.last_x = player.x #remember player's last position
+            self.last_y = player.y
+            libtcod.dijkstra_compute(path_map, monster.x, monster.y)
+            libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
+            #compute and set path to the player
+            if path_map is not False: #if there is a possible path
+                x,y = libtcod.dijkstra_get(path_map, 0) #get next tile from path
+                if monster.distance_to(player) > 1: #if player is away
+                    if not is_blocked(x,y): #if next tile is not blocked
+                        monster.move_towards(x,y) #move to next tile
+                    else: #if it is blocked, move in random direction
+                        dir = random_step()
+                        monster.move(dir[0],dir[1])
+                elif player.fighter.power > 0 and monster.is_cardinal(player.x, player.y) == True:
+                #if player is alive and in cardinal direction - attack
+                    monster.fighter.attack(player)
+        elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
+        #if lost sight of the player and alerted
             libtcod.dijkstra_compute(path_map, monster.x, monster.y)
             libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
             #move towards the player's last known position or stumble around if impossible
@@ -557,7 +617,7 @@ def create_v_tunnel(y1, y2, x):
 
 #map generation function
 def make_map():
-    global map, objects, num_rooms, hole, drop
+    global map, objects, num_rooms, hole, drop, lv_feeling
 
     #the list of objects with just the player
     objects = [player]
@@ -622,17 +682,25 @@ def make_map():
                     #first move horizontally, than vertically
                     create_h_tunnel(prev_x, new_x, prev_y)
                     create_v_tunnel(prev_y, new_y, new_x)
+
+                    if libtcod.random_get_int(0, 0, 1) == 1:
+                        create_h_tunnel(prev_x, new_x, prev_y+1)
+                        create_v_tunnel(prev_y, new_y, new_x+1)
                 else:
                     #coin=0
                     #first move vertically, than horizontally
                     create_v_tunnel(prev_y, new_y, prev_x)
                     create_h_tunnel(prev_x, new_x, new_y)
 
+                    if libtcod.random_get_int(0, 0, 1) == 1:
+                        create_v_tunnel(prev_y, new_y, prev_x+1)
+                        create_h_tunnel(prev_x, new_x, new_y+1)
+
             #finally, append the new room to the list
             rooms.append(new_room)
             num_rooms += 1
 
-    if d_level is not 9:
+    if d_level is not 10:
 
         #place the hole in the last room
         item_component = Item(use_function=new_level)
@@ -642,15 +710,16 @@ def make_map():
         objects.append(hole)
         hole.send_to_back()
     else:
-        fighter_component = Fighter(hp=15, stamina=10, power=15, death_function=archdemon_death)
-        ai_component = Pathfinder()
+        fighter_component = Fighter(hp=30, stamina=10, power=10, death_function=archdemon_death)
+        ai_component = Pathfinder_arch()
 
-        monster = Object(x, y, 'A', 'Archdemon', libtcod.cyan, blocks=True, fighter=fighter_component, ai=ai_component)
+        monster = Object(new_x, new_y, 'A', 'Archdemon', libtcod.cyan, blocks=True, fighter=fighter_component, ai=ai_component, always_visible=True)
         objects.append(monster)
+        lv_feeling = 'finale'
 
 #object generator function
 def place_objects(room):
-    global num_rooms, drop
+    global num_rooms, drop, got_key, NUM_POTIONS, NUM_SHARDS, NUM_ARCH, lv_feeling
     #choose a random number of monsters
     num_monsters = libtcod.random_get_int(0, 2, MAX_ROOM_MONSTERS + d_level)
 
@@ -667,19 +736,19 @@ def place_objects(room):
 
                 if roll_monster < 10:
                     #create an ogre
-                    fighter_component = Fighter(hp=4, stamina=10, power=12, death_function=monster_death)
+                    fighter_component = Fighter(hp=7, stamina=10, power=8, death_function=monster_death)
                     ai_component = Pathfinder()
 
                     monster = Object(x, y, 'O', 'ogre', libtcod.darker_red, blocks=True, fighter=fighter_component, ai=ai_component)
                 elif roll_monster < 10+55:
                     #create a hurlock
-                    fighter_component = Fighter(hp=3, stamina=10, power=8, death_function=monster_death)
+                    fighter_component = Fighter(hp=4, stamina=10, power=5, death_function=monster_death)
                     ai_component = Pathfinder()
 
                     monster = Object(x, y, 'H', 'hurlock', libtcod.dark_orange * libtcod.light_grey, blocks=True, fighter=fighter_component, ai=ai_component)
                 else:
                     #create a genlock
-                    fighter_component = Fighter(hp=3, stamina=10, power=6, death_function=monster_death)
+                    fighter_component = Fighter(hp=3, stamina=10, power=3, death_function=monster_death)
                     ai_component = Pathfinder()
 
                     monster = Object(x, y, 'g', 'genlock', libtcod.dark_green, blocks=True,
@@ -687,7 +756,7 @@ def place_objects(room):
 
                 objects.append(monster)
 
-    if d_level != 1 and drop == False:
+    if d_level > 1 and drop == False and NUM_POTIONS > 0:
         #choose a random number of items
         num_items = libtcod.random_get_int(0, 0, MAX_ROOM_ITEMS)
 
@@ -707,9 +776,14 @@ def place_objects(room):
                     objects.append(item)
                     item.send_to_back() #items appear below monsters/player/corpses
                     item.always_visible = True #items are visible even out of FOV
+                    NUM_POTIONS -= 1
                     drop = True
 
-    if d_level != 9 and num_rooms == 5:
+    if NUM_ARCH > 0:
+        shard_chance = libtcod.random_get_int(0, 1, 100)
+    else:
+        shard_chance = 100
+    if d_level < 10 and d_level > 1 and num_rooms == 5 and NUM_SHARDS > 0 and shard_chance >= 50:
         x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
         y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
 
@@ -722,6 +796,22 @@ def place_objects(room):
         objects.append(item)
         item.send_to_back()
         item.always_visible = True
+        got_key = False
+        NUM_SHARDS -= 1
+        lv_feeling = 'shard'
+
+    elif d_level < 10 and d_level > 1 and num_rooms == 5 and NUM_ARCH > 0 and NUM_SHARDS > 0:
+        x = libtcod.random_get_int(0, room.x1+1, room.x2-1)
+        y = libtcod.random_get_int(0, room.y1+1, room.y2-1)
+
+        fighter_component = Fighter(hp=9001, stamina=10, power=15, death_function=archdemon_death)
+        ai_component = Pathfinder_arch()
+
+        monster = Object(x, y, 'A', 'Archdemon', libtcod.cyan, blocks=True, fighter=fighter_component, ai=ai_component, always_visible=True)
+        objects.append(monster)
+        got_key = True
+        NUM_ARCH -= 1
+        lv_feeling = 'arch'
 
 #rendering function
 def render_all():
@@ -797,7 +887,7 @@ def render_all():
 
     libtcod.console_set_default_foreground(panel, libtcod.lightest_gray)
     libtcod.console_print_ex(panel, 1, 6, libtcod.BKGND_NONE, libtcod.LEFT, 'Dungeon level: ' + str(d_level))
-    libtcod.console_print_ex(panel, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Killing spree: ' + str(monsters_killed))
+    libtcod.console_print_ex(panel, 1, 7, libtcod.BKGND_NONE, libtcod.LEFT, 'Darkspawn killed: ' + str(monsters_killed))
     libtcod.console_print_ex(panel, 1, 8, libtcod.BKGND_NONE, libtcod.LEFT, 'Score: ' + str(monsters_killed * d_level))
 
     #print the game messages, one line at a time
@@ -831,11 +921,14 @@ def handle_keys():
 
         while(True):
             leave = False
-            choice = menu('\n Do you really want to return to main menu? \n', ['No.', 'Yes, quit.'], 44)
+            choice = menu('\n Do you really want to return to main menu? \n', ['No.', 'Restart', 'Yes, quit.'], 44)
 
             if choice == 0: #Don't quit
                 break
-            elif choice == 1: #quit and save the score
+            if choice == 1:
+                new_game()
+                play_game()
+            elif choice == 2: #quit and save the score
                 now = datetime.datetime.now()
                 date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
                 score = str(monsters_killed * d_level)
@@ -1522,10 +1615,12 @@ def cast_fireball():
 
 def get_shard():
     global got_key
-    if d_level is not 9:
+    if NUM_SHARDS is not 0:
         message('You have found a fragment of an ancient weapon.', libtcod.light_violet)
     else:
         message('The sword shards magically reforge, and a powerful sword lays in your hands.', libtcod.light_violet)
+        message('This sword will allow you to kill the Archdemon!')
+        player.fighter.power += 3
     got_key = True
 
 ################################
@@ -1567,7 +1662,7 @@ def new_game():
         PLAYER_NAME = "Warden"
 
     #create a fighter component for the player, add a player @, state objects list
-    fighter_component = Fighter(hp=20, stamina=100, power=10, death_function=player_death)
+    fighter_component = Fighter(hp=20, stamina=100, power=8, death_function=player_death)
     player = Object(0, 0, "@", PLAYER_NAME, libtcod.silver * 1.5, blocks=True, fighter=fighter_component)
 
     #list for storing the game messages
@@ -1606,6 +1701,12 @@ def new_game():
     old_mouse_x = 0
     old_mouse_y = 0
 
+    NUM_SHARDS = 4
+    NUM_POTIONS = 5
+    NUM_ARCH = 2
+    lv_feeling = 'none'
+    got_key = True
+
     didnttaketurn = 0
 
     #welcoming message
@@ -1614,15 +1715,23 @@ def new_game():
     message('Press F1 to display the help screen.', libtcod.lightest_gray)
 
 def new_level():
-    global player, game_msgs, game_state, d_level
+    global player, game_msgs, game_state, d_level, lv_feeling
 
-    make_map()
+    lv_feeling = 'none'
     d_level += 1 #add one to the dungeon level
+    make_map()
     got_key = False
     initialize_fov()
     make_path_map()
     game_state='playing'
-    message('You follow some narrow tunnels deeper down. You hear earth rumbling behind you.', libtcod.red)
+    if lv_feeling == 'none':
+        message('You follow some narrow tunnels deeper down. You hear earth rumbling behind you.', libtcod.grey)
+    elif lv_feeling == 'arch':
+        message('With every step you take, you can feel the evil presence of an Archdemon. Run!', libtcod.red)
+    elif lv_feeling == 'shard':
+        message('You feel there is a powerful item around this area.', libtcod.gold)
+    elif lv_feeling == 'finale':
+        message('Here it is! Kill the Archdemon!')
 
 #as name says
 def initialize_fov():
@@ -1801,7 +1910,7 @@ def highscores():
     libtcod.sys_wait_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
 
 def help_screen():
-    halp = libtcod.console_new(70, 30)
+    halp = libtcod.console_new(70, 35)
     header = "Warden Help Screen"
 
     while True:
@@ -1818,30 +1927,35 @@ def help_screen():
   SPACE / .                   -   Wait a turn
   TAB                         -   Cycle interesting things on screen
   Point with mouse            -   Display names of objects
-  F1                          -   Display help screen
+  PAGE UP / PAGE DOWN         -   Change screen size
+  F1                          -   Display help screen (this)
   F11                         -   Toggle fullscreen
   ESCAPE                      -   Quit to main menu (confirm)
   SHIFT + P                   -   Take a screenshot
 
   ----------
   The objectives:
-  - Gain points by killing monsters and descending
-  - Seek out blade shards to gain access to the lower levels
-  - Kill the Archdemon on level 10
+  - Seek out blade shards to gain access to the lower levels!
+  - Reforge an ancient sword!
+  - Kill the Archdemon on level 10!
   - Beat the highscore!
 
-  Main mechanics:
-  - Walk into things to attack (original idea! honest!)
+  Some tips:
+  - Walk into things to attack
   - Your stamina drains quickly in combat and while waiting,
       only killing monsters can replenish it with your rage
+  - If you run out of power, you are dead
+  - You can't kill the Archdemon without a powerful sword
   - Find health potions to regain some lost strength
-  - Only cardinal directions are valid for movement"""
+  - Only cardinal directions are valid for movement
+  \n
+  """
 
         libtcod.console_print_rect_ex(halp, 0, 3, 0, 0, libtcod.BKGND_NONE, libtcod.LEFT, walloftext)
 
         x = SCREEN_WIDTH/2 - 70/2
         y = SCREEN_HEIGHT/2 - 30/2
-        libtcod.console_blit(halp, 0, 0, 70, 30, 0, x, y, 1.0, 1)
+        libtcod.console_blit(halp, 0, 0, 70, 35, 0, x, y, 1.0, 1)
 
 
         libtcod.console_flush()
