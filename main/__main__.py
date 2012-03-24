@@ -66,9 +66,6 @@
 #                                                           #
 #############################################################
 
-# 1.1
-# [TODO] Improve and consolidate UI/messages and their colors
-
 # Pretty stuff
 # [TODO] Flash on hit
 # [TODO] Add blood decals.
@@ -362,7 +359,7 @@ class Fighter:
                 damage = 3
                 self.rest(10)
             elif self.owner.char == 'A' and d_level < 10:
-                message("Archdemon drains your lifeforce!", libtcod.red)
+                message("Archdemon drains your lifeforce!", libtcod.light_blue)
                 target.fighter.tire_down(100)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
@@ -373,7 +370,7 @@ class Fighter:
 
         #apply damage
         if damage == 3:
-            message(self.owner.name.capitalize() + ' slashes ' + target.name + '!')
+            message(self.owner.name.capitalize() + ' slashes ' + target.name + '!', libtcod.light_blue)
             victim.take_damage(damage)
 
 
@@ -1138,8 +1135,8 @@ def player_move_or_attack(dx, dy):
         if item is not None and item.name is not 'passage':
             item.item.use()
         elif item is not None and item.name == 'passage' and got_key == False:
-            message("You feel the presence of a great artifact nearby.", libtcod.purple)
-            message("You cannot leave here without it.", libtcod.purple)
+            message("You feel the presence of a great artifact nearby.", libtcod.dark_purple)
+            message("You cannot leave here without it.", libtcod.dark_purple)
         elif item is not None and item.name == 'passage' and got_key == True:
             item.item.use()
         items = get_names_player_tile()
@@ -1181,7 +1178,7 @@ def player_death(player):
 def monster_death(monster):
     global monsters_killed
     #transforms a dead mob into a non-blocking corpse that can't be attacked and doesn't move (yet)
-    message(monster.name.capitalize() + ' is dead!', libtcod.orange)
+    message(monster.name.capitalize() + ' is dead!', libtcod.light_blue)
     monster.char = '%'
     monster.color = libtcod.darker_red
     monster.blocks = False
@@ -1201,10 +1198,10 @@ def archdemon_death(monster):
 
     monsters_killed += 100
 
-    message(monster.name.capitalize() + ' is dead!', libtcod.red)
-    message("As you lay down your sword, the horde screams in panic.", libtcod.red)
-    message("Congratulations Warden!", libtcod.red)
-    message("With your death you bought some time for the living.", libtcod.red)
+    message(monster.name.capitalize() + ' is dead!', libtcod.light_blue)
+    message("As you lay down your sword, the horde howls in dispair!", libtcod.light_purple)
+    message("Congratulations Warden!", libtcod.light_purple)
+    message("With your death you bought some time for the living.", libtcod.light_purple)
     message("Press ESCAPE to quit and check your score.")
     message("")
     monster.char = 'A'
@@ -1619,7 +1616,7 @@ def get_shard():
         message('You have found a fragment of an ancient weapon.', libtcod.light_violet)
     else:
         message('The sword shards magically reforge, and a powerful sword lays in your hands.', libtcod.light_violet)
-        message('This sword will allow you to kill the Archdemon!')
+        message('This sword will allow you to kill the Archdemon!', libtcod.light_blue)
         player.fighter.power += 3
     got_key = True
 
@@ -1725,13 +1722,13 @@ def new_level():
     make_path_map()
     game_state='playing'
     if lv_feeling == 'none':
-        message('You follow some narrow tunnels deeper down. You hear earth rumbling behind you.', libtcod.grey)
+        message('You follow some narrow tunnels deeper down. You hear earth rumbling behind you.', libtcod.lightest_grey)
     elif lv_feeling == 'arch':
-        message('With every step you take, you can feel the evil presence of an Archdemon. Run!', libtcod.red)
+        message('With every step you take, you can feel the evil presence of an Archdemon. Run!', libtcod.light_red)
     elif lv_feeling == 'shard':
         message('You feel there is a powerful item around this area.', libtcod.gold)
     elif lv_feeling == 'finale':
-        message('Here it is! Kill the Archdemon!')
+        message('Here it is! Kill the Archdemon!', libtcod.light_red)
 
 #as name says
 def initialize_fov():
