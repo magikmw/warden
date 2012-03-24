@@ -1875,9 +1875,6 @@ con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[w
 #bottom panel console
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
 
-#keyboard delay, not sure if it will help
-libtcod.console_set_keyboard_repeat(1000, 200)
-
 high = ord('a')
 main_menu()
 
