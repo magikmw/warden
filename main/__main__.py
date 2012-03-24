@@ -829,19 +829,24 @@ def handle_keys():
     #exit game
     elif key.vk == libtcod.KEY_ESCAPE:
 
-        choice = menu('   Do you really want to \n return to main menu?', ['No.', 'Yes, quit.'], 24)
+        while(True):
+            leave = False
+            choice = menu('\n Do you really want to return to main menu? \n', ['No.', 'Yes, quit.'], 44)
 
-        if choice == 0: #Don't quit
-            pass
-        elif choice == 1: #quit and save the score
-            now = datetime.datetime.now()
-            date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
-            score = str(monsters_killed * d_level)
+            if choice == 0: #Don't quit
+                break
+            elif choice == 1: #quit and save the score
+                now = datetime.datetime.now()
+                date_time = str(now.year) + "-" + str(now.month) + "-" + str(now.day) + " " + str(now.hour) + ":" + str(now.minute)
+                score = str(monsters_killed * d_level)
 
-            string = (score + " - " + player.name + " - " + date_time + "\n")
-            fileObj = open("main/data/highscores.dat", "a")
-            fileObj.write(string)
-            fileObj.close()
+                string = (score + " - " + player.name + " - " + date_time + "\n")
+                fileObj = open("main/data/highscores.dat", "a")
+                fileObj.write(string)
+                fileObj.close()
+                leave = True
+                break
+        if leave == True:
             return 'exit'
 
     #use pgup and pgdown to change font size on the fly
