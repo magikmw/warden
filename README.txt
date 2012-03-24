@@ -30,8 +30,10 @@
  Keybindings:
 
  Arrows / numpad / vi-keys   -   Arrows / numpad arrows / vi-keys
+ Space / .                   -   Wait a turn
  TAB                         -   Cycle interesting things on screen
  Point with mouse            -   Display names of objects
+ PAGE UP / PAGE DOWN         -   Change screen size
  F1                          -   Display help screen
  F11                         -   Toggle fullscreen
  SHIFT + Q                   -   Exit to main menu (no saving!)
@@ -39,15 +41,17 @@
 
  ----------
  The objectives:
- - Gain as many points as possible by killing monsters and descending
- - Seek out blade shards to gain access to the lower levels of the dungeon
- - Kill the Archdemon on level 10
+ - Seek out blade shards to gain access to the lower levels!
+ - Reforge an ancient sword!
+ - Kill the Archdemon on level 10!
  - Beat the highscore!
 
- Main mechanics:
- - Walk into things to attack (original idea! honest!)
+ Some tips:
+ - Walk into things to attack
  - Your stamina drains quickly in combat and while waiting,
      only killing monsters can replenish it with your rage
+ - If you run out of power, you are dead
+ - You can't kill the Archdemon without a powerful sword
  - Find health potions to regain some lost strength
  - Only cardinal directions are valid for movement
 
