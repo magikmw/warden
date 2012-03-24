@@ -98,7 +98,7 @@ import datetime
 
 #tile
 GAME_TITLE = 'Warden'
-VERSION = '1.0.0'
+VERSION = '1.1'
 
 #DEBUG
 DEBUG_NO_FOG = False
