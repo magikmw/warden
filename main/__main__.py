@@ -851,12 +851,27 @@ def handle_keys():
         elif init_font == 12:
             init_font = 16
             libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+            libtcod.sys_set_fps(LIMIT_FPS)
+            con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
+            #bottom panel console
+            panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
         elif init_font == 10:
             init_font = 12
             libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+            libtcod.sys_set_fps(LIMIT_FPS)
+            con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
+            #bottom panel console
+            panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
         elif init_font == 8:
             init_font = 10
-            libtcod.console_set_custom_font('main/data/terminal10x10_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_set_custom_font('main/data/terminal10x10_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+            libtcod.sys_set_fps(LIMIT_FPS)
+            con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
+            #bottom panel console
+            panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
         else:
             print("Well, obviously there is an error in handle_keys")
 
@@ -865,13 +880,28 @@ def handle_keys():
             pass
         elif init_font == 10:
             init_font = 8
-            libtcod.console_set_custom_font('main/data/terminal8x8_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_set_custom_font('main/data/terminal8x8_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+            libtcod.sys_set_fps(LIMIT_FPS)
+            con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
+            #bottom panel console
+            panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
         elif init_font == 12:
             init_font = 10
-            libtcod.console_set_custom_font('main/data/terminal10x10_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_set_custom_font('main/data/terminal10x10_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+            libtcod.sys_set_fps(LIMIT_FPS)
+            con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
+            #bottom panel console
+            panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
         elif init_font == 16:
             init_font = 12
             libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+            libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+            libtcod.sys_set_fps(LIMIT_FPS)
+            con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
+            #bottom panel console
+            panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
         else:
             print("Well, obviously there is an error in handle_keys")
 
@@ -1824,10 +1854,10 @@ def help_screen():
 res_height = libtcod.sys_get_current_resolution()[1]
 if res_height <= 550:
     init_font = 8
-    libtcod.console_set_custom_font('main/data/terminal8x8_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+    libtcod.console_set_custom_font('main/data/terminal8x8_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 600:
     init_font = 10
-    libtcod.console_set_custom_font('main/data/terminal10x10_gs_tc.png', libtcod.FONT_LAYOUT_TCOD | libtcod.FONT_TYPE_GRAYSCALE)
+    libtcod.console_set_custom_font('main/data/terminal10x10_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 900:
     init_font = 12
     libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
