@@ -71,9 +71,10 @@
 # [TODO] Add blood decals.
 
 # WAT
+# [FIX] SEGFAULTS
 # [TODO] Clean code of unused methods, classes, stuff
 # [FIX] Segfault while entering next lv (8->9, cratuki, windows)
-# [FIX] Segfaults (put print everywhere)
+# [FIX] Segfaults (put print everywhere) - in progress
 # [TODO] Balance tweaks
 #       * change distribution of monster kind per lv
 #       * reduce the size of levels
@@ -198,8 +199,6 @@ MSG_HEIGHT = PANEL_HEIGHT - 2 #top message placement (y)
 
 #menu constants
 INVENTORY_WIDTH = 50
-
-CONFUSE_NUM_TURNS = 5
 
 #tab-look variable declaration
 interest_names = '0'
@@ -427,13 +426,13 @@ class Fighter:
         if rand <= tohit: #set damage
             if self.owner.char == '@':
                 damage = 3
-                self.rest(10)
+                self.rest(10) # [XXX] I don't think it's supposed to be like this. (+10 stamina every turn?)
             elif self.owner.char == 'A' and d_level < 10:
                 message("Archdemon drains your lifeforce!", libtcod.light_blue)
                 target.fighter.tire_down(100)
             elif self.owner.char == 'A' and d_level == 10:
                 message("The Archdemon cripples you!", libtcod.light_blue)
-                target.figther.tire_down(25)
+                player.figther.tire_down(25)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
                 target.fighter.tire_down(10)
@@ -1700,6 +1699,8 @@ def play_game():
                 player.fighter.stamina = 100
             player.fighter.tire_down(1)
             highlight = 0
+            turns_passed += 1
+            logg.debug('Turn %s, AI is taking turn.', turns_passed)
             for object in objects:
                 if object.ai:
                     object.ai.take_turn()
