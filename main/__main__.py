@@ -91,6 +91,35 @@ import thirdparty.libtcodpy as libtcod #libtcod import, and rename
 import math #for math, duh
 import textwrap #for messages
 import datetime
+import logging
+
+################################
+# LOGGER INITIALIZATION        #
+################################
+
+# create a logger
+logg = logging.getLogger('Main')
+logg.setLevel(logging.DEBUG)
+
+# create console handler and set level to debug
+logg_ch = logging.StreamHandler()
+logg_ch.setLevel(logging.DEBUG)
+
+# crate a formatter and add it to the handler
+# [HH:MM:SS AM][LEVEL] Message string
+logg_formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s', datefmt='%I:%M:%S %p')
+logg_ch.setFormatter(logg_formatter)
+
+# add ch to logger
+logg.addHandler(logg_ch)
+
+# ready to go!
+# logging convention:
+# logg.debug('') for variable passing
+# logg.info('') for standard initialization messages
+# logg.warn('') for known errors and caught exceptions
+# logg.error('') for something that shouldn't happen
+# logg.critical('') for breakage errors
 
 ################################
 # CONSTANTS                    #
