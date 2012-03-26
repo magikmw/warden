@@ -71,6 +71,9 @@
 # [TODO] Add blood decals.
 
 # WAT
+# [TODO] Clean code of unused methods, classes, stuff
+# [FIX] Segfault while entering next lv (8->9, cratuki, windows)
+# [FIX] Segfaults (put print everywhere)
 # [TODO] Balance tweaks
 #       * change distribution of monster kind per lv
 #       * reduce the size of levels
@@ -95,11 +98,11 @@ logg.setLevel(logging.DEBUG)
 
 # create console handler and set level to debug
 logg_ch = logging.StreamHandler()
-logg_ch.setLevel(logging.DEBUG)
+logg_ch.setLevel(logging.INFO)
 
 # crate a formatter and add it to the handler
 # [HH:MM:SS AM][LEVEL] Message string
-logg_formatter = logging.Formatter('[%(asctime)s][%(levelname)s] %(message)s', datefmt='%I:%M:%S %p')
+logg_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%M:%S')
 logg_ch.setFormatter(logg_formatter)
 
 # add ch to logger
@@ -122,15 +125,15 @@ logg.info('Logging initialized.')
 logg.info('Module import initialized.')
 
 import thirdparty.libtcodpy as libtcod #libtcod import, and rename
-logg.info('libTCOD initialized')
+logg.debug('libTCOD initialized')
 import math #for math, duh
-logg.info('math initialized')
+logg.debug('math initialized')
 import textwrap #for messages
-logg.info('textwrap initialized')
+logg.debug('textwrap initialized')
 import datetime
-logg.info('datetime initialized')
+logg.debug('datetime initialized')
 
-logg.info('All modules imported succesfuly.')
+logg.info('All modules imported succesfully.')
 
 ################################
 # CONSTANTS                    #
@@ -236,7 +239,7 @@ class Tile:
         if block_sight is None: block_sight = blocked
         self.block_sight = block_sight
 
-logg.info('Tile initialized.')
+logg.debug('Tile initialized.')
 
 class Rect:
     #a rectangle on a map used to make rooms
@@ -256,7 +259,7 @@ class Rect:
     #returns true if this rectangle intersects with one another
         return (self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
 
-logg.info('Rect initialized.')
+logg.debug('Rect initialized.')
 
 class Object:
     #any entity represented by a character
@@ -359,7 +362,7 @@ class Object:
         #return the distance to given coordinates
         return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
-logg.info('Object initialized.')
+logg.debug('Object initialized.')
 
 ################################
 # COMPONENT CLASSES            #
@@ -464,7 +467,7 @@ class Fighter:
                 message("The corruption and your wounds take their toll.", libtcod.dark_purple)
                 self.stamina += 70
 
-logg.info('Fighter initialized.')
+logg.debug('Fighter initialized.')
 
 #basic pathfinding AI for monsters
 class Pathfinder:
@@ -517,7 +520,7 @@ class Pathfinder:
         #finally, block the tile so other monsters can path around it
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, False)
 
-logg.info('Pathfinder initialized.')
+logg.debug('Pathfinder initialized.')
 
 class Pathfinder_arch:
     def __init__(self, alerted = 1, last_x=None, last_y=None):
@@ -568,7 +571,7 @@ class Pathfinder_arch:
         #finally, block the tile so other monsters can path around it
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, False)
 
-logg.info('Pathfinder_arch initialized')
+logg.debug('Pathfinder_arch initialized')
 
 #an item that can be picked up and used
 class Item:
@@ -629,7 +632,7 @@ class Item:
                 inventory.append(self.owner)
                 message('You are no longer wearing/wielding ' + self.owner.name + '.')
 
-logg.info('Item initialized.')
+logg.debug('Item initialized.')
 logg.info('Class initialization finished.')
 
 ################################
@@ -646,7 +649,7 @@ def create_room(room):
             map[x][y].blocked = False
             map[x][y].block_sight = False
 
-logg.info('create_room()')
+logg.debug('create_room()')
 
 #horizontal tunnel creation between rooms
 def create_h_tunnel(x1, x2, y):
@@ -655,7 +658,7 @@ def create_h_tunnel(x1, x2, y):
         map[x][y].blocked = False
         map[x][y].block_sight = False
 
-logg.info('create_h_tunnel()')
+logg.debug('create_h_tunnel()')
 
 #vertical tunnel creation between rooms
 def create_v_tunnel(y1, y2, x):
@@ -664,7 +667,7 @@ def create_v_tunnel(y1, y2, x):
         map[x][y].blocked = False
         map[x][y].block_sight = False
 
-logg.info('create_v_tunnel')
+logg.debug('create_v_tunnel')
 
 #map generation function
 def make_map():
@@ -768,7 +771,7 @@ def make_map():
         objects.append(monster)
         lv_feeling = 'finale'
 
-logg.info('make_map()')
+logg.debug('make_map()')
 
 #object generator function
 def place_objects(room):
@@ -866,7 +869,7 @@ def place_objects(room):
         NUM_ARCH -= 1
         lv_feeling = 'arch'
 
-logg.info('place_objects()')
+logg.debug('place_objects()')
 
 #rendering function
 def render_all():
@@ -960,7 +963,7 @@ def render_all():
 
     #blit panel's contents to the root console
     libtcod.console_blit(panel, 0, 0, SCREEN_WIDTH, PANEL_HEIGHT, 0, 0, PANEL_Y)
-logg.info('render_all()')
+logg.debug('render_all()')
 
 #keystrokes function
 def handle_keys():
@@ -1083,60 +1086,6 @@ def handle_keys():
 
         else:
             #test for other keys
-            """
-            if key_char == 'g':
-                pick_list = []
-                #pick up an item
-                for object in objects: #look for an item in player's tile
-                    if object.x == player.x and object.y == player.y and object.item:
-                        pick_list.append(object)
-
-                #if there's only one item, pick it up instantly
-                if len(pick_list) == 1:
-                    pick_list[0].item.pick_up()
-                    return True
-
-                #if there's more, display a menu to chose one
-                elif len(pick_list) > 1:
-                    high = ord('a')
-                    chosen_item = pickup_menu('Choose an item to pick up.\n')
-                    if chosen_item is not None:
-                        chosen_item.item.pick_up()
-                        return True
-
-            if key_char == 'a':
-                #show the inventory, if an item is selected, use it
-                high = ord('a')
-                chosen_item = inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.use()
-                    return True
-
-            if key_char == 'w':
-                #show the inventory, let player wear the items
-                high = ord('a')
-                chosen_item = inventory_menu('Press the key next to an item to wear it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.wear()
-                    return True
-
-            if key_char == 'r':
-                #show the equipment screen, let the player remove the one he chose
-                high = ord('a')
-                chosen_item = equipment_menu('Press the key next to an item to remove it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.remove()
-                    return True
-
-            if key_char == 'd':
-                #show the inventory, if an item is selected, drop it
-                high = ord('a')
-                chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.drop()
-                    return True
-
-            """
 
             if key_char == 'o':
                 #find hole, and jump!
@@ -1161,7 +1110,7 @@ def handle_keys():
 
             return 'didnt-take-turn' #This makes sure that monsters don't take turn if player did not.
 
-logg.info('handle_keys()')
+logg.debug('handle_keys()')
 
 #movement and attacking
 def player_move_or_attack(dx, dy):
@@ -1206,7 +1155,7 @@ def player_move_or_attack(dx, dy):
 
         fov_recompute = True
 
-logg.info('player_move_or_attack()')
+logg.debug('player_move_or_attack()')
 
 #function that checks if the tile is blocked
 def is_blocked(x, y):
@@ -1225,7 +1174,7 @@ def is_blocked(x, y):
 
     return False
 
-logg.info('is_blocked()')
+logg.debug('is_blocked()')
 
 #GAME OVER MAN, GAME OVER
 def player_death(player):
@@ -1239,7 +1188,7 @@ def player_death(player):
     player.char = '%'
     player.color = libtcod.darker_red
 
-logg.info('player_death()')
+logg.debug('player_death()')
 
 #monster death function
 def monster_death(monster):
@@ -1259,7 +1208,7 @@ def monster_death(monster):
 
     monster.send_to_back()
 
-logg.info('monster_death()')
+logg.debug('monster_death()')
 
 def archdemon_death(monster):
 
@@ -1283,7 +1232,7 @@ def archdemon_death(monster):
 
     game_state = "win"
 
-logg.info('archdemon_death()')
+logg.debug('archdemon_death()')
 
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, console):
     #bar rendering function (hp/xp/mana, whatever)
@@ -1307,7 +1256,7 @@ def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, c
     libtcod.console_set_default_foreground(panel, libtcod.white)
     libtcod.console_print_ex(console, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER, name + ': ' + str(value))
 
-logg.info('render_bar()')
+logg.debug('render_bar()')
 
 #msgs handling function
 def message(new_msg, color = libtcod.white):
@@ -1321,7 +1270,7 @@ def message(new_msg, color = libtcod.white):
         #add the new line as a tuple, with the text and colour
         game_msgs.append( (line, color) )
 
-logg.info('message()')
+logg.debug('message()')
 
 #return a string with objects names that are under the mouse
 def get_names_under_mouse():
@@ -1347,7 +1296,7 @@ def get_names_under_mouse():
     names = ', ' .join(names) #join the names separated by commas
     return names.capitalize()
 
-logg.info('get_names_under_mouse()')
+logg.debug('get_names_under_mouse()')
 
 #return a string with objects names that are on the same tile as player
 def get_names_player_tile():
@@ -1358,7 +1307,7 @@ def get_names_player_tile():
     names = ', ' .join(names)
     return names.capitalize()
 
-logg.info('get_names_player_tile()')
+logg.debug('get_names_player_tile()')
 
 def interest_list():
     global interest_names, interest_pos
@@ -1367,7 +1316,7 @@ def interest_list():
 
     interest_pos = [(obj.x, obj.y) for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
 
-logg.info('interest_list()')
+logg.debug('interest_list()')
 
 def interest_tab(position, name):
     global interest_cycle, highlight, old_highlight_tab
@@ -1391,7 +1340,7 @@ def interest_tab(position, name):
         else:
             interest_cycle += 1
 
-logg.info('interest_tab()')
+logg.debug('interest_tab()')
 
 #menu function - initially for the inventory screen
 def menu(header, options, width, offset=0):
@@ -1478,20 +1427,20 @@ def menu(header, options, width, offset=0):
     if index >= 0 and index < len(options): return index
     return 99
 
-logg.info('menu()')
+logg.debug('menu()')
 
 def msgbox(text, width=50):
     menu(text, [], width) #uses menu() as a message box
     libtcod.sys_sleep_milli(1000)
 
-logg.info('msgbox()')
+logg.debug('msgbox()')
 
 #create a pathing map from the fov_map
 def make_path_map():
     global path_map
     path_map = libtcod.dijkstra_new(fov_map, 0)
 
-logg.info('make_path_map()')
+logg.debug('make_path_map()')
 
 def random_step():
     #valid move directions (including waiting)
@@ -1510,7 +1459,7 @@ def random_step():
 
     return dir
 
-logg.info('random_step()')
+logg.debug('random_step()')
 
 ################################
 # Magic Effects                #
@@ -1521,7 +1470,7 @@ def cast_power():
     player.fighter.stamina = 100
     player.fighter.power += 1
 
-logg.info('cast_power()')
+logg.debug('cast_power()')
 
 def get_shard():
     global got_key
@@ -1533,7 +1482,7 @@ def get_shard():
         player.fighter.power += 3
     got_key = True
 
-logg.info('get_shard()')
+logg.debug('get_shard()')
 
 ################################
 # META-GAME FUNCTIONS          #
@@ -1565,7 +1514,7 @@ def main_menu():
 
         libtcod.console_flush() #clear the console before redraw (fixes blacking out issue?
 
-logg.info('main_menu()')
+logg.debug('main_menu()')
 
 #new game initialisation
 def new_game():
@@ -1628,7 +1577,7 @@ def new_game():
     message('Use arrows, numpad or vi-keys to move.', libtcod.lightest_gray)
     message('Press F1 to display the help screen.', libtcod.lightest_gray)
 
-logg.info('new_game()')
+logg.debug('new_game()')
 
 def new_level():
     global player, game_msgs, game_state, d_level, lv_feeling
@@ -1649,7 +1598,7 @@ def new_level():
     elif lv_feeling == 'finale':
         message('Here it is! Kill the Archdemon!', libtcod.light_red)
 
-logg.info('new_level()')
+logg.debug('new_level()')
 
 #as name says
 def initialize_fov():
@@ -1671,7 +1620,7 @@ def initialize_fov():
         for object in objects:
             object.always_visible = True
 
-logg.info('initialize_fov()')
+logg.debug('initialize_fov()')
 
 #main game function
 def play_game():
@@ -1715,7 +1664,7 @@ def play_game():
             interest_list()
             interest_cycle = 0
 
-logg.info('play_game()')
+logg.debug('play_game()')
 
 def input_box(header, width=50):
     timer = 0
@@ -1782,7 +1731,7 @@ def input_box(header, width=50):
 
     return command
 
-logg.info('input_box()')
+logg.debug('input_box()')
 
 def highscores():
     scores = []
@@ -1833,7 +1782,7 @@ def highscores():
 
     libtcod.sys_wait_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
 
-logg.info('highscores()')
+logg.debug('highscores()')
 
 def help_screen():
     halp = libtcod.console_new(70, 35)
@@ -1889,7 +1838,7 @@ def help_screen():
         if libtcod.sys_wait_for_event(libtcod.EVENT_KEY_PRESS | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), False) != 0:
             return False
 
-logg.info('help_screen()')
+logg.debug('help_screen()')
 logg.info('Functions initialization finished.')
 ################################
 # Initialization               #
@@ -1916,14 +1865,14 @@ else:
     logg.debug('Font size set to 16')
     init_font = 16
     libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
-logg.info('Main console initialization.')
+logg.debug('Main console initialization.')
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
-logg.info('Setting the FPS limit.')
+logg.debug('Setting the FPS limit.')
 libtcod.sys_set_fps(LIMIT_FPS)
-logg.info('Drawing console initialization.')
+logg.debug('Drawing console initialization.')
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
 #bottom panel console
-logg.info('Bottom panel console initialization.')
+logg.debug('Bottom panel console initialization.')
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
 
 high = ord('a')
