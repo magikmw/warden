@@ -84,18 +84,10 @@
 
 
 ################################
-# FILE IMPORT                  #
-################################
-
-import thirdparty.libtcodpy as libtcod #libtcod import, and rename
-import math #for math, duh
-import textwrap #for messages
-import datetime
-import logging
-
-################################
 # LOGGER INITIALIZATION        #
 ################################
+
+import logging
 
 # create a logger
 logg = logging.getLogger('Main')
@@ -121,9 +113,30 @@ logg.addHandler(logg_ch)
 # logg.error('') for something that shouldn't happen
 # logg.critical('') for breakage errors
 
+logg.info('Logging initialized.')
+
+################################
+# MODULE IMPORT                #
+################################
+
+logg.info('Module import initialized.')
+
+import thirdparty.libtcodpy as libtcod #libtcod import, and rename
+logg.info('libTCOD initialized')
+import math #for math, duh
+logg.info('math initialized')
+import textwrap #for messages
+logg.info('textwrap initialized')
+import datetime
+logg.info('datetime initialized')
+
+logg.info('All modules imported succesfuly.')
+
 ################################
 # CONSTANTS                    #
 ################################
+
+logg.info('Constants initialization.')
 
 #tile
 GAME_TITLE = 'Warden'
@@ -204,9 +217,13 @@ lv_feeling = 'none'
 d_level = 1
 got_key = True
 
+logg.info('Constants initialization finished.')
+
 ################################
 # CLASSES                      #
 ################################
+
+logg.info('Class initialization.')
 
 class Tile:
     #a tile of the map and its properties
@@ -218,6 +235,8 @@ class Tile:
         #by default, if a tile is blocked, it also blocks sight
         if block_sight is None: block_sight = blocked
         self.block_sight = block_sight
+
+logg.info('Tile initialized.')
 
 class Rect:
     #a rectangle on a map used to make rooms
@@ -236,6 +255,8 @@ class Rect:
     def intersect(self, other):
     #returns true if this rectangle intersects with one another
         return (self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
+
+logg.info('Rect initialized.')
 
 class Object:
     #any entity represented by a character
@@ -338,9 +359,13 @@ class Object:
         #return the distance to given coordinates
         return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
+logg.info('Object initialized.')
+
 ################################
 # COMPONENT CLASSES            #
 ################################
+
+logg.info('Component classes initialization.')
 
 #fighting abilities class
 class Fighter:
@@ -439,6 +464,8 @@ class Fighter:
                 message("The corruption and your wounds take their toll.", libtcod.dark_purple)
                 self.stamina += 70
 
+logg.info('Fighter initialized.')
+
 #basic pathfinding AI for monsters
 class Pathfinder:
     def __init__(self, alerted = 0, last_x=None, last_y=None):
@@ -490,6 +517,8 @@ class Pathfinder:
         #finally, block the tile so other monsters can path around it
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, False)
 
+logg.info('Pathfinder initialized.')
+
 class Pathfinder_arch:
     def __init__(self, alerted = 1, last_x=None, last_y=None):
         self.alerted = alerted
@@ -539,25 +568,7 @@ class Pathfinder_arch:
         #finally, block the tile so other monsters can path around it
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, False)
 
-#AI for any temporarily confused monster
-class ConfusedMonster:
-    def __init__(self, old_ai, num_turns=CONFUSE_NUM_TURNS):
-        self.old_ai = old_ai
-        self.num_turns = num_turns
-
-    def take_turn(self):
-        libtcod.map_set_properties(fov_map, self.owner.x, self.owner.y, not map[self.owner.x][self.owner.y].block_sight, True)
-
-        if self.num_turns > 0: #if still confused
-            #move in random direction, decrease the number of confusion turns left
-            dir = random_step()
-            self.owner.move(dir[0],dir[1])
-            self.num_turns -= 1
-
-        else: #restore to previous AI
-            self.owner.ai = self.old_ai
-            message('The ' + self.owner.name + ' does not look confused anymore!', libtcod.red)
-        libtcod.map_set_properties(fov_map, self.owner.x, self.owner.y, not map[self.owner.x][self.owner.y].block_sight, False)
+logg.info('Pathfinder_arch initialized')
 
 #an item that can be picked up and used
 class Item:
@@ -618,9 +629,14 @@ class Item:
                 inventory.append(self.owner)
                 message('You are no longer wearing/wielding ' + self.owner.name + '.')
 
+logg.info('Item initialized.')
+logg.info('Class initialization finished.')
+
 ################################
 # FUNCTIONS                    #
 ################################
+
+logg.info('Functions initialization.')
 
 #room creation function
 def create_room(room):
@@ -630,6 +646,8 @@ def create_room(room):
             map[x][y].blocked = False
             map[x][y].block_sight = False
 
+logg.info('create_room()')
+
 #horizontal tunnel creation between rooms
 def create_h_tunnel(x1, x2, y):
     global map
@@ -637,12 +655,16 @@ def create_h_tunnel(x1, x2, y):
         map[x][y].blocked = False
         map[x][y].block_sight = False
 
+logg.info('create_h_tunnel()')
+
 #vertical tunnel creation between rooms
 def create_v_tunnel(y1, y2, x):
     global map
     for y in range(min(y1, y2), max(y1, y2) + 1):
         map[x][y].blocked = False
         map[x][y].block_sight = False
+
+logg.info('create_v_tunnel')
 
 #map generation function
 def make_map():
@@ -746,6 +768,8 @@ def make_map():
         objects.append(monster)
         lv_feeling = 'finale'
 
+logg.info('make_map()')
+
 #object generator function
 def place_objects(room):
     global num_rooms, drop, got_key, NUM_POTIONS, NUM_SHARDS, NUM_ARCH, lv_feeling
@@ -842,6 +866,8 @@ def place_objects(room):
         NUM_ARCH -= 1
         lv_feeling = 'arch'
 
+logg.info('place_objects()')
+
 #rendering function
 def render_all():
     global fov_map
@@ -934,6 +960,7 @@ def render_all():
 
     #blit panel's contents to the root console
     libtcod.console_blit(panel, 0, 0, SCREEN_WIDTH, PANEL_HEIGHT, 0, 0, PANEL_Y)
+logg.info('render_all()')
 
 #keystrokes function
 def handle_keys():
@@ -1134,6 +1161,8 @@ def handle_keys():
 
             return 'didnt-take-turn' #This makes sure that monsters don't take turn if player did not.
 
+logg.info('handle_keys()')
+
 #movement and attacking
 def player_move_or_attack(dx, dy):
     global fov_recompute, interest_cycle, didnttaketurn
@@ -1177,6 +1206,8 @@ def player_move_or_attack(dx, dy):
 
         fov_recompute = True
 
+logg.info('player_move_or_attack()')
+
 #function that checks if the tile is blocked
 def is_blocked(x, y):
     #check map tile first
@@ -1194,6 +1225,8 @@ def is_blocked(x, y):
 
     return False
 
+logg.info('is_blocked()')
+
 #GAME OVER MAN, GAME OVER
 def player_death(player):
     global game_state
@@ -1205,6 +1238,8 @@ def player_death(player):
     #visual corpse change
     player.char = '%'
     player.color = libtcod.darker_red
+
+logg.info('player_death()')
 
 #monster death function
 def monster_death(monster):
@@ -1223,6 +1258,8 @@ def monster_death(monster):
     libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True)
 
     monster.send_to_back()
+
+logg.info('monster_death()')
 
 def archdemon_death(monster):
 
@@ -1246,6 +1283,8 @@ def archdemon_death(monster):
 
     game_state = "win"
 
+logg.info('archdemon_death()')
+
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, console):
     #bar rendering function (hp/xp/mana, whatever)
     if maximum == 0:
@@ -1268,6 +1307,8 @@ def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, c
     libtcod.console_set_default_foreground(panel, libtcod.white)
     libtcod.console_print_ex(console, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER, name + ': ' + str(value))
 
+logg.info('render_bar()')
+
 #msgs handling function
 def message(new_msg, color = libtcod.white):
     new_msg_lines = textwrap.wrap(new_msg, MSG_WIDTH)
@@ -1279,6 +1320,8 @@ def message(new_msg, color = libtcod.white):
 
         #add the new line as a tuple, with the text and colour
         game_msgs.append( (line, color) )
+
+logg.info('message()')
 
 #return a string with objects names that are under the mouse
 def get_names_under_mouse():
@@ -1304,6 +1347,8 @@ def get_names_under_mouse():
     names = ', ' .join(names) #join the names separated by commas
     return names.capitalize()
 
+logg.info('get_names_under_mouse()')
+
 #return a string with objects names that are on the same tile as player
 def get_names_player_tile():
     (x, y) = (player.x, player.y)
@@ -1313,12 +1358,16 @@ def get_names_player_tile():
     names = ', ' .join(names)
     return names.capitalize()
 
+logg.info('get_names_player_tile()')
+
 def interest_list():
     global interest_names, interest_pos
 
     interest_names = [obj.name for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
 
     interest_pos = [(obj.x, obj.y) for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
+
+logg.info('interest_list()')
 
 def interest_tab(position, name):
     global interest_cycle, highlight, old_highlight_tab
@@ -1341,6 +1390,8 @@ def interest_tab(position, name):
             interest_cycle = 0
         else:
             interest_cycle += 1
+
+logg.info('interest_tab()')
 
 #menu function - initially for the inventory screen
 def menu(header, options, width, offset=0):
@@ -1427,108 +1478,20 @@ def menu(header, options, width, offset=0):
     if index >= 0 and index < len(options): return index
     return 99
 
-#inventory menu function (utilizes above)
-def inventory_menu(header):
-     while True:
-        if len(inventory) ==  0:
-            options = ['Inventory is empty.']
-
-        else:
-            options = [item.name for item in inventory]
-
-        index = menu(header, options, INVENTORY_WIDTH)
-
-        #if an item was chosen, return it
-        if index is None or len(inventory) == 0: return None
-        elif index == 99: continue
-        else: return inventory[index].item
-
-def pickup_menu(header):
-    while True:
-        options = [item.name for item in  pick_list]
-
-        index = menu(header, options, INVENTORY_WIDTH)
-
-        if index is None or len(pick_list) == 0: return None
-        elif index == 99: continue
-        else: return pick_list[index]
-
-def equipment_menu(header):
-    while True:
-        if len(equipment) == 0:
-            options = ['You are not wearing or wielding anything.']
-
-        else:
-            options = [item.name for item in equipment]
-
-        index = menu(header, options, INVENTORY_WIDTH)
-
-        #if an item was chosen, return it
-        if index is None or len(equipment) == 0: return None
-        elif index == 99: continue
-        else: return equipment[index].item
-
-#find the closest enemy, up to a maximum range in the player's FOV
-def closest_monster(max_range):
-    closest_enemy = None
-    closest_dist = max_range + 1 #start with slightly more then maximum range
-
-    for object in objects:
-        if object.fighter and not object == player and libtcod.map_is_in_fov(fov_map, object.x, object.y):
-        #calculate the distance between the object and the player
-            dist = player.distance_to(object)
-            if dist < closest_dist: #it's closest, remember
-                closest_enemy = object
-                closest_dist = dist
-    return closest_enemy
-
-#return the position of left-clicked tile in player's FOV/set range, None,None if right-clicked
-def target_tile(max_range=None):
-    while True:
-        #render the screen erasing the inventory and showing the objects name under the mouse
-        render_all()
-        libtcod.console_flush()
-
-        key = libtcod.console_check_for_keypress()
-        mouse = libtcod.mouse_get_status() #get ouse position and click status
-        (x, y) = (mouse.cx, mouse.cy)
-
-        #accept the target if the player clicked in FOV and check for optional range
-        if (mouse.lbutton_pressed and libtcod.map_is_in_fov(fov_map, x, y) and
-            (max_range is None or player.distance(x, y) <= max_range)):
-            return(x, y)
-
-        #cancel if player right-clicked or pressed Escape
-        if mouse.rbutton_pressed or key.vk == libtcod.KEY_ESCAPE:
-            message('Cancelled.', libtcod.white)
-            return (None, None)
-
-#returns a clicked monster inside FOV or range, or None if right-clicked
-def target_monster (max_range=None):
-    while True:
-        (x, y) = target_tile(max_range)
-        if x is None: #player cancelled
-            message('Cancelled.', libtcod.white)
-            return None
-
-        #return the first clicked monster, loop until you do
-        for obj in objects:
-            if obj.x == x and obj.y == y and obj.fighter and obj != player:
-                return obj
+logg.info('menu()')
 
 def msgbox(text, width=50):
     menu(text, [], width) #uses menu() as a message box
     libtcod.sys_sleep_milli(1000)
 
-#a simple win condition - kill enough monsters to win
-def win_condition():
-    if monsters_killed >= MONSTERS_TO_WIN:
-        return True
+logg.info('msgbox()')
 
 #create a pathing map from the fov_map
 def make_path_map():
     global path_map
     path_map = libtcod.dijkstra_new(fov_map, 0)
+
+logg.info('make_path_map()')
 
 def random_step():
     #valid move directions (including waiting)
@@ -1547,100 +1510,18 @@ def random_step():
 
     return dir
 
-def dice_roll(dices, sides):
-    result = 0
-    while not dices == 0:
-        roll = libtcod.random_get_int(0, 1, sides)
-        result = result + roll
-        dices -= 1
-
-    return result
-################################
-# Wearable Items               #
-################################
-
-def wield_weapon(rating):
-    global weapon_wield
-    if weapon_wield == False:
-        player.fighter.power = player.fighter.power + rating
-        weapon_wield = True
-    else:
-        return 'cancelled'
-
-def remove_weapon(rating):
-    global weapon_wield
-    player.fighter.power = player.fighter.power - rating
-    weapon_wield = False
-
-def wear_armor(rating):
-    global armor_worn
-    if armor_worn == False:
-        player.fighter.defense = player.fighter.defense + rating
-        armor_worn = True
-    else:
-        return 'cancelled'
-
-def remove_armor(rating):
-    global armor_worn
-    player.fighter.defense = player.fighter.defense - rating
-    armor_worn = False
+logg.info('random_step()')
 
 ################################
 # Magic Effects                #
 ################################
-
-#player healing (by set amount)
-#[why] should be easy enough to convert this to RNG value
-def cast_heal():
-    if player.fighter.hp == player.fighter.max_hp:
-        message('You are already at full health.', libtcod.red)
-        return 'cancelled'
-
-    heal = dice_roll(2,5) + 2
-
-    message('Your wounds start to feel better!', libtcod.light_violet)
-    player.fighter.heal(heal)
 
 def cast_power():
     message('You drink the potion and feel the power in your veins!', libtcod.light_violet)
     player.fighter.stamina = 100
     player.fighter.power += 1
 
-#lightning spell that finds closest enemy within a maximum range and deals damage
-#[why] as with above, should be easy to tweak this to semi-random
-def cast_lightning():
-    monster = closest_monster(LIGHTNING_RANGE)
-    if monster is None: #if no enemy is found within max range - cancel
-        message('No enemy is close enough to strike with vengeance.', libtcod.red)
-        return 'cancelled'
-
-    #target found? light'em up!
-    message('A lightning bolt strikes the ' + monster.name + ' with a loud thunder! The damage is ' + str(LIGHTNING_DAMAGE) + ' hit points.', libtcod.light_blue)
-    monster.fighter.take_damage(LIGHTNING_DAMAGE)
-
-def cast_confuse():
-    #ask the player to select a target for confuse spell
-    message('Left-click an enemy to confuse it, or right-click to cancel.', libtcod.light_cyan)
-    monster = target_monster(CONFUSE_RANGE)
-    if monster is None: return 'cancelled'
-
-    #replace the monster's AI with "confused"
-    old_ai = monster.ai
-    monster.ai = ConfusedMonster(old_ai)
-    monster.ai.owner = monster #tell the new component who owns it
-    message('The eyes of the ' + monster.name + ' look vacant, as it starts to stumble around!', libtcod.light_green)
-
-def cast_fireball():
-    #ask the player for a target tile to throw a fireball at
-    message('Left-click a target tile for the fireball, or right-click to cancel.', libtcod.light_cyan)
-    (x, y) = target_tile()
-    if x is None: return 'cancelled'
-    message('The fireball explodes, burning everything within ' + str(FIREBALL_RADIUS) + ' tiles!', libtcod.orange)
-
-    for obj in objects: #damage every fighter in range, including the player
-        if obj.distance(x, y) <= FIREBALL_RADIUS and obj.fighter:
-            message('The ' + obj.name + ' gets burned for ' + str(FIREBALL_DAMAGE) + ' hit points.', libtcod.orange)
-            obj.fighter.take_damage(FIREBALL_DAMAGE)
+logg.info('cast_power()')
 
 def get_shard():
     global got_key
@@ -1651,6 +1532,8 @@ def get_shard():
         message('This sword will allow you to kill the Archdemon!', libtcod.light_blue)
         player.fighter.power += 3
     got_key = True
+
+logg.info('get_shard()')
 
 ################################
 # META-GAME FUNCTIONS          #
@@ -1681,6 +1564,8 @@ def main_menu():
             break
 
         libtcod.console_flush() #clear the console before redraw (fixes blacking out issue?
+
+logg.info('main_menu()')
 
 #new game initialisation
 def new_game():
@@ -1743,6 +1628,8 @@ def new_game():
     message('Use arrows, numpad or vi-keys to move.', libtcod.lightest_gray)
     message('Press F1 to display the help screen.', libtcod.lightest_gray)
 
+logg.info('new_game()')
+
 def new_level():
     global player, game_msgs, game_state, d_level, lv_feeling
 
@@ -1761,6 +1648,8 @@ def new_level():
         message('You feel there is a powerful item around this area.', libtcod.gold)
     elif lv_feeling == 'finale':
         message('Here it is! Kill the Archdemon!', libtcod.light_red)
+
+logg.info('new_level()')
 
 #as name says
 def initialize_fov():
@@ -1781,6 +1670,8 @@ def initialize_fov():
                 map[x][y].explored = True
         for object in objects:
             object.always_visible = True
+
+logg.info('initialize_fov()')
 
 #main game function
 def play_game():
@@ -1823,6 +1714,8 @@ def play_game():
 
             interest_list()
             interest_cycle = 0
+
+logg.info('play_game()')
 
 def input_box(header, width=50):
     timer = 0
@@ -1889,6 +1782,8 @@ def input_box(header, width=50):
 
     return command
 
+logg.info('input_box()')
+
 def highscores():
     scores = []
     try:
@@ -1937,6 +1832,8 @@ def highscores():
     libtcod.sys_sleep_milli(1000)
 
     libtcod.sys_wait_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
+
+logg.info('highscores()')
 
 def help_screen():
     halp = libtcod.console_new(70, 35)
@@ -1992,33 +1889,46 @@ def help_screen():
         if libtcod.sys_wait_for_event(libtcod.EVENT_KEY_PRESS | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), False) != 0:
             return False
 
-
-
+logg.info('help_screen()')
+logg.info('Functions initialization finished.')
 ################################
 # Initialization               #
 ################################
 
+logg.info('Main loop initialization.')
+logg.info('Auto detect screen resolution and set font size.')
 #font import, spawn window, window name, FPS (if real-time)
 res_height = libtcod.sys_get_current_resolution()[1]
+logg.debug('Screen height detected: %s', str(res_height))
 if res_height <= 550:
+    logg.debug('Font size set to 8')
     init_font = 8
     libtcod.console_set_custom_font('main/data/terminal8x8_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 600:
+    logg.debug('Font size set to 10')
     init_font = 10
     libtcod.console_set_custom_font('main/data/terminal10x10_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 900:
+    logg.debug('Font size set to 12')
     init_font = 12
     libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 else:
+    logg.debug('Font size set to 16')
     init_font = 16
     libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+logg.info('Main console initialization.')
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+logg.info('Setting the FPS limit.')
 libtcod.sys_set_fps(LIMIT_FPS)
+logg.info('Drawing console initialization.')
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
 #bottom panel console
+logg.info('Bottom panel console initialization.')
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
 
 high = ord('a')
+logg.info('Invoking main_menu()')
 main_menu()
 
+logg.info('Program terminated properly. Have a nice day.')
 #End of the line.
