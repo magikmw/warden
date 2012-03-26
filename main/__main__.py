@@ -96,9 +96,10 @@ import logging
 logg = logging.getLogger('Main')
 logg.setLevel(logging.DEBUG)
 
-# create console handler and set level to debug
-logg_ch = logging.StreamHandler()
-logg_ch.setLevel(logging.INFO)
+# create a handler and set level
+#logg_ch = logging.StreamHandler()
+logg_ch = logging.FileHandler('warden.log', mode='a', encoding=None, delay=False)
+logg_ch.setLevel(logging.DEBUG)
 
 # crate a formatter and add it to the handler
 # [HH:MM:SS AM][LEVEL] Message string
@@ -126,7 +127,7 @@ logg.info('Module import initialized.')
 
 import thirdparty.libtcodpy as libtcod #libtcod import, and rename
 logg.debug('libTCOD initialized')
-import math #for math, duh
+from math import pi, atan, sqrt #for math, duh
 logg.debug('math initialized')
 import textwrap #for messages
 logg.debug('textwrap initialized')
@@ -285,16 +286,18 @@ class Object:
             self.item.owner = self
 
     def move(self, dx, dy):
+        #logg.debug('move() called, %s, %s', dx, dy)
         #moving by given amount
         if not is_blocked(self.x + dx, self.y + dy):
             self.x += dx
             self.y += dy
 
     def move_towards(self, target_x, target_y):
+        #logg.debug('move_towards() called, %s, %s', target_x, target_y)
         #return a vector and distance to target
         dx = target_x - self.x
         dy = target_y - self.y
-        distance = math.sqrt(dx ** 2 + dy ** 2)
+        distance = sqrt(dx ** 2 + dy ** 2)
 
         #normalize the vector to lenght 1 (preserving directors)
         #round and convert to integer
@@ -303,10 +306,11 @@ class Object:
         self.move(dx, dy)
 
     def is_cardinal(self, target_x, target_y):
+        #logg.debug('is_cardinal() called, %s, %s', target_x, target_y)
         #check if the target tile is in cardinal direction from self
         dx = target_x - self.x
         dy = target_y - self.y
-        distance = math.sqrt(dx ** 2 + dy ** 2)
+        distance = sqrt(dx ** 2 + dy ** 2)
 
         dx = int(round(dx / distance))
         dy = int(round(dy / distance))
@@ -325,14 +329,17 @@ class Object:
             return True
 
     def distance_to(self, other):
+        #logg.debug('distance_to() called %s, %s', other.x, other.y)
         #return the distance to another object (euclidean, and float!)
         dx = other.x - self.x
         dy = other.y - self.y
-        dist = math.sqrt(dx ** 2 + dy ** 2)
+        dist = sqrt(dx ** 2 + dy ** 2)
         return dist
 
     def draw(self):
+        #logg.debug('draw() called')
         #if visible to the player, or explored and always visible
+        #logg.debug('Method draw() called by %s, pos x: %s, y: %s', self.name, str(self.x), str(self.y))
         if libtcod.map_is_in_fov(fov_map, self.x, self.y) or (self.always_visible and map[self.x][self.y].explored):
             libtcod.console_set_default_foreground(con, self.color)
             if map[self.x][self.y].highlight == None:
@@ -341,7 +348,9 @@ class Object:
                 libtcod.console_put_char(con, self.x, self.y, self.char, HIGHLIGHT_COLOR)
 
     def clear(self):
+        #logg.debug('clear() called')
         #clear the sign
+        #logg.debug('Method clear() called by %s, pos x: %s, y: %s', self.name, str(self.x), str(self.y))
         if libtcod.map_is_in_fov(fov_map, self.x, self.y) and map[self.x][self.y].highlight == None:
             libtcod.console_put_char_ex(con, self.x, self.y, '.', libtcod.grey, color_light_ground)
         elif libtcod.map_is_in_fov(fov_map, self.x, self.y) and map[self.x][self.y].highlight == True:
@@ -353,14 +362,16 @@ class Object:
                 libtcod.console_put_char_ex(con, self.x, self.y, ' ', libtcod.black, libtcod.black)
 
     def send_to_back(self):
+        #logg.debug('send_to_back() called')
         #make this obcject drawn first so it appears beneath everything else
         global objects
         objects.remove(self)
         objects.insert(0, self)
 
     def distance(self, x, y):
+        #logg.debug('distance() called, %s, %s', x, y)
         #return the distance to given coordinates
-        return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
+        return sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
 logg.debug('Object initialized.')
 
@@ -382,6 +393,7 @@ class Fighter:
         self.death_function = death_function
 
     def take_damage(self, damage):
+        #logg.debug('take_damage() called, %s', damage)
         #apply damage if possible
         if damage > 0:
             self.hp -= damage
@@ -394,10 +406,11 @@ class Fighter:
 
     #cauchy distribution attack formula, should work neatly
     def attack(self, target):
+        #logg.debug('attack() called, %s', target.name)
         victim = target.fighter #lets give the target an easier callname
         damage = 0
 
-        tohit = math.atan((float(self.power) - float(victim.power)/(5.0)))/math.pi + 0.5
+        tohit = atan((float(self.power) - float(victim.power)/(5.0)))/pi + 0.5
         #main system function + crit bonus below
         if self.power > victim.power:
             diff = self.power - victim.power
@@ -477,6 +490,7 @@ class Pathfinder:
         self.last_y = last_y
 
     def take_turn(self):
+        #logg.debug('Take turn called.')
         monster = self.owner
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True) #unlock own tile before move
 
@@ -485,11 +499,15 @@ class Pathfinder:
             self.alerted = 15 #stay alert for 5 turns
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
+            logg.debug('libtcod.dijkstra_compute() called by %s, pos x: %s, y: %s', monster.name, str(monster.x), str(monster.y))
             libtcod.dijkstra_compute(path_map, monster.x, monster.y)
+            logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
             libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
             #compute and set path to the player
             if path_map is not False: #if there is a possible path
+                logg.debug('path_map is not False')
                 x,y = libtcod.dijkstra_get(path_map, 0) #get next tile from path
+                logg.debug('dijkstra_get(path_map) to next step produced x: %s, y: %s', x, y)
                 if monster.distance_to(player) > 1: #if player is away
                     if not is_blocked(x,y): #if next tile is not blocked
                         monster.move_towards(x,y) #move to next tile
@@ -502,11 +520,15 @@ class Pathfinder:
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
             self.alerted = self.alerted - 1 #decrease the alert level
+            logg.debug('libtcod.dijkstra_compute() called by %s, pos x: %s, y: %s', monster.name, str(monster.x), str(monster.y))
             libtcod.dijkstra_compute(path_map, monster.x, monster.y)
+            logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
             libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
             #move towards the player's last known position or stumble around if impossible
             if path_map is not False:
+                logg.debug('path_map is not False')
                 x,y = libtcod.dijkstra_get(path_map, 0)
+                logg.debug('dijkstra_get(path_map) to next step produced x: %s, y: %s', x, y)
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
@@ -537,7 +559,9 @@ class Pathfinder_arch:
             #player in view
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
+            logg.debug('libtcod.dijkstra_compute() called by %s, pos x: %s, y: %s', monster.name, str(monster.x), str(monster.y))
             libtcod.dijkstra_compute(path_map, monster.x, monster.y)
+            logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
             libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
             #compute and set path to the player
             if path_map is not False: #if there is a possible path
@@ -553,11 +577,15 @@ class Pathfinder_arch:
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
+            logg.debug('libtcod.dijkstra_compute() called by %s, pos x: %s, y: %s', monster.name, str(monster.x), str(monster.y))
             libtcod.dijkstra_compute(path_map, monster.x, monster.y)
+            logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
             libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
             #move towards the player's last known position or stumble around if impossible
             if path_map is not False:
+                logg.debug('path_map is not False')
                 x,y = libtcod.dijkstra_get(path_map, 0)
+                logg.debug('dijkstra_get(path_map) to next step produced x: %s, y: %s', x, y)
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
@@ -643,6 +671,7 @@ logg.info('Functions initialization.')
 
 #room creation function
 def create_room(room):
+    #logg.debug('create_room() called')
     global map
     for x in range(room.x1 + 1, room.x2):
        for y in range(room.y1 + 1, room.y2):
@@ -653,6 +682,7 @@ logg.debug('create_room()')
 
 #horizontal tunnel creation between rooms
 def create_h_tunnel(x1, x2, y):
+    #logg.debug('create_h_tunnel() called')
     global map
     for x in range(min(x1, x2), max(x1, x2) + 1):
         map[x][y].blocked = False
@@ -662,6 +692,7 @@ logg.debug('create_h_tunnel()')
 
 #vertical tunnel creation between rooms
 def create_v_tunnel(y1, y2, x):
+    #logg.debug('create_v_tunnel')
     global map
     for y in range(min(y1, y2), max(y1, y2) + 1):
         map[x][y].blocked = False
@@ -671,6 +702,7 @@ logg.debug('create_v_tunnel')
 
 #map generation function
 def make_map():
+    #logg.debug('make_map() called')
     global map, objects, num_rooms, hole, drop, lv_feeling
 
     #the list of objects with just the player
@@ -771,11 +803,14 @@ def make_map():
         objects.append(monster)
         lv_feeling = 'finale'
 
+    #logg.debug('make_map() finished with %s rooms, player at %s, %s, lv_feeling = %s, exit at %s, %s', num_rooms, player.x, player.y, lv_feeling, new_x, new_y)
+
 logg.debug('make_map()')
 
 #object generator function
 def place_objects(room):
     global num_rooms, drop, got_key, NUM_POTIONS, NUM_SHARDS, NUM_ARCH, lv_feeling
+    #logg.debug('place_objects called in room %s', num_rooms)
     #choose a random number of monsters
     num_monsters = libtcod.random_get_int(0, 2, MAX_ROOM_MONSTERS + d_level)
 
@@ -868,6 +903,8 @@ def place_objects(room):
         got_key = True
         NUM_ARCH -= 1
         lv_feeling = 'arch'
+
+        #logg.debug('place_objects done', num_rooms)
 
 logg.debug('place_objects()')
 
@@ -1165,6 +1202,7 @@ def is_blocked(x, y):
         if map[x][y].blocked:
             return True
     except IndexError:
+        logg.warn('is_blocked() catched an IndexError with values x: %s and y: %s', str(x), str(y))
         return True
 
     #than check for blocking objects
@@ -1437,6 +1475,7 @@ logg.debug('msgbox()')
 
 #create a pathing map from the fov_map
 def make_path_map():
+    logg.debug('make_path_map() called')
     global path_map
     path_map = libtcod.dijkstra_new(fov_map, 0)
 
@@ -1582,6 +1621,8 @@ logg.debug('new_game()')
 def new_level():
     global player, game_msgs, game_state, d_level, lv_feeling
 
+    #logg.debug('new_level() called, d_lv is %s', d_level + 1)
+
     lv_feeling = 'none'
     d_level += 1 #add one to the dungeon level
     make_map()
@@ -1602,6 +1643,7 @@ logg.debug('new_level()')
 
 #as name says
 def initialize_fov():
+    #logg.debug('initialize_fov() called')
     global fov_recompute, fov_map
     fov_recompute = True
 
@@ -1624,6 +1666,7 @@ logg.debug('initialize_fov()')
 
 #main game function
 def play_game():
+    #logg.debug('play_game() called')
     global game_state, win_print, highlight, interest_cycle, didnttaketurn, turns_passed
     player_action = None
 
