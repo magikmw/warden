@@ -570,9 +570,9 @@ class Pathfinder_arch:
                     else: #if it is blocked, move in random direction
                         dir = random_step()
                         monster.move(dir[0],dir[1])
-                logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
+                    logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
                 elif player.fighter.power > 0 and monster.is_cardinal(player.x, player.y) == True:
-                #if player is alive and in cardinal direction - attack
+                    #if player is alive and in cardinal direction - attack
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
@@ -1482,7 +1482,7 @@ def make_path_map():
 
 logg.debug('make_path_map()')
 
-def destroy_path_map()
+def destroy_path_map():
     logg.debug('destroy_path_map() called')
     global path_map
     libtcod.path_delete(path_map)
