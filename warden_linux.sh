@@ -1,5 +1,8 @@
 #! /bin/bash
 
+#remove log files if present
+find . -name \*.log -exec rm {} \;
+
 #check for arguments to pass
 ARG=$1
 
