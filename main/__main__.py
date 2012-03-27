@@ -222,6 +222,9 @@ lv_feeling = 'none'
 d_level = 1
 got_key = True
 
+fov_map = None
+path_map = None
+
 logg.info('Constants initialization finished.')
 
 ################################
