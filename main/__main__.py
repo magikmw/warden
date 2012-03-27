@@ -72,7 +72,6 @@
 
 # WAT
 # [FIX] SEGFAULTS
-# [TODO] Clean code of unused methods, classes, stuff
 # [FIX] Segfault while entering next lv (8->9, cratuki, windows)
 # [FIX] Segfaults (put print everywhere) - in progress
 # [TODO] Balance tweaks
@@ -80,7 +79,7 @@
 #       * reduce the size of levels
 # [XXX] Side panel for stats, reduce size of screen altogether?
 # [FIX] Adjust keyboard repeat? Keys not reged
-# [FIX] srd| reported interface bork
+# [FIX?] srd| reported interface bork
 # [XXX] Remove mouselook
 
 ################################
@@ -1007,8 +1006,11 @@ logg.debug('render_all()')
 def handle_keys():
     global fov_recompute, pick_list, high, init_font
 
-    key = libtcod.console_check_for_keypress(libtcod.KEY_PRESSED)
+    key = libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESSED, libtcod.Key(), libtcod.Mouse())
     key_char = chr(key.c)
+
+    if key is not 0:
+        logg.debug('Key pressed: key_char[%s], key.vk[%s].', key_char, key.vk)
 
     #toggle fullscreen
     if key.vk == libtcod.KEY_F11:
