@@ -78,7 +78,7 @@
 #       * change distribution of monster kind per lv
 #       * reduce the size of levels
 # [XXX] Side panel for stats, reduce size of screen altogether?
-# [FIX] Adjust keyboard repeat? Keys not reged
+# [FIX] Keys not regged [Chaged to sys_check_for_event, added a debug message]
 # [FIX?] srd| reported interface bork
 # [XXX] Remove mouselook
 
