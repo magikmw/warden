@@ -1654,6 +1654,10 @@ def initialize_fov():
     global fov_recompute, fov_map
     fov_recompute = True
 
+    #clear old map if present
+    if fov_map is not None:
+        libtcod.map_clear(fov_map, transparent = False, walkable = False)
+
     #create the FOV map, according to the generated map
     fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
     for y in range(MAP_HEIGHT):
