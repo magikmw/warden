@@ -1006,7 +1006,7 @@ logg.debug('render_all()')
 def handle_keys():
     global fov_recompute, pick_list, high, init_font
 
-    key = libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESSED, libtcod.Key(), libtcod.Mouse())
+    key = libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS, libtcod.Key(), libtcod.Mouse())
     key_char = chr(key.c)
 
     if key is not 0:
