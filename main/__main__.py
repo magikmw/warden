@@ -439,7 +439,7 @@ class Fighter:
                 target.fighter.tire_down(25)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
-                target.fighter.tire_down(10)
+                target.fighter.tire_down(5)
 
         else:
             message(self.owner.name.capitalize() + ' misses!', libtcod.light_blue)
@@ -502,7 +502,7 @@ class Pathfinder:
             self.alerted = 15 #stay alert for 5 turns
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
-            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self_last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
             libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
             #compute and set path to the player
             if path_map is not False: #if there is a possible path
@@ -522,7 +522,7 @@ class Pathfinder:
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
             self.alerted = self.alerted - 1 #decrease the alert level
-            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self_last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
             logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
             #move towards the player's last known position or stumble around if impossible
             if path_map is not False:
