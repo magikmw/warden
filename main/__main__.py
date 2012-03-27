@@ -505,10 +505,9 @@ class Pathfinder:
             logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
             libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
             #compute and set path to the player
-            if path_map is not False: #if there is a possible path
-                logg.debug('path_map is not False')
-                x,y = libtcod.path_get(path_map, 0) #get next tile from path
-                logg.debug('path_get(path_map) to next step produced x: %s, y: %s', x, y)
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
+            if x is not None and y is not None: #if there is a possible path
                 if monster.distance_to(player) > 1: #if player is away
                     if not is_blocked(x,y): #if next tile is not blocked
                         monster.move_towards(x,y) #move to next tile
@@ -518,17 +517,16 @@ class Pathfinder:
                     logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
                 elif player.fighter.power > 0 and monster.is_cardinal(player.x, player.y) == True:
                 #if player is alive and in cardinal direction - attack
+                    logg.debug('Monster attacks x: %s, y: %s', player.x, player.y)
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
             self.alerted = self.alerted - 1 #decrease the alert level
             logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
-            logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
             #move towards the player's last known position or stumble around if impossible
-            if path_map is not False:
-                logg.debug('path_map is not False')
-                x,y = libtcod.path_get(path_map, 0) #get next tile from path
-                logg.debug('path_get(path_map) to next step produced x: %s, y: %s', x, y)
+            if x is not None and y is not None:
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
@@ -561,12 +559,11 @@ class Pathfinder_arch:
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
             logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self_last_y)
-            logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
+            libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
             #compute and set path to the player
-            if path_map is not False: #if there is a possible path
-                logg.debug('path_map is not False')
-                x,y = libtcod.path_get(path_map, 0) #get next tile from path
-                logg.debug('path_get(path_map) to next step produced x: %s, y: %s', x, y)
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
+            if x is not None and y is not None: #if there is a possible path
                 if monster.distance_to(player) > 1: #if player is away
                     if not is_blocked(x,y): #if next tile is not blocked
                         monster.move_towards(x,y) #move to next tile
@@ -576,16 +573,17 @@ class Pathfinder_arch:
                     logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
                 elif player.fighter.power > 0 and monster.is_cardinal(player.x, player.y) == True:
                     #if player is alive and in cardinal direction - attack
+                    logg.debug('Monster attacks x: %s, y: %s', player.x, player.y)
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
             logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self_last_y)
-            logg.debug('libtcod.map_path_set() to x: %s, y: %s', self.last_x, self.last_y)
+            libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
+            #compute and set path to the player
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
             #move towards the player's last known position or stumble around if impossible
-            if path_map is not False:
-                logg.debug('path_map is not False')
-                x,y = libtcod.path_get(path_map, 0) #get next tile from path
-                logg.debug('path_get(path_map) to next step produced x: %s, y: %s', x, y)
+            if x is not None and y is not None: #if there is a possible path
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
