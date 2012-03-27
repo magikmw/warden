@@ -71,9 +71,7 @@
 # [TODO] Add blood decals.
 
 # WAT
-# [FIX] SEGFAULTS
-# [FIX] Segfault while entering next lv (8->9, cratuki, windows)
-# [FIX] Segfaults (put print everywhere) - in progress
+# [XXX] Segfaults should be fixed
 # [TODO] Balance tweaks
 #       * change distribution of monster kind per lv
 #       * reduce the size of levels
