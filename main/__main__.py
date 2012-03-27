@@ -426,13 +426,12 @@ class Fighter:
         if rand <= tohit: #set damage
             if self.owner.char == '@':
                 damage = 3
-                self.rest(10) # [XXX] I don't think it's supposed to be like this. (+10 stamina every turn?)
             elif self.owner.char == 'A' and d_level < 10:
                 message("Archdemon drains your lifeforce!", libtcod.light_blue)
                 target.fighter.tire_down(100)
             elif self.owner.char == 'A' and d_level == 10:
                 message("The Archdemon cripples you!", libtcod.light_blue)
-                player.figther.tire_down(25)
+                target.fighter.tire_down(25)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
                 target.fighter.tire_down(10)
@@ -1240,6 +1239,7 @@ def monster_death(monster):
     monster.name = 'remains of ' + monster.name
     monster.always_visible = True
     monsters_killed += 1
+    player.fighter.rest(15)
     #make sure the spot where body lies is cleared for other monsters to move on
     libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True)
 
