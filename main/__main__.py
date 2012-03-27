@@ -98,17 +98,20 @@ logg = logging.getLogger('Main')
 logg.setLevel(logging.DEBUG)
 
 # create a handler and set level
-#logg_ch = logging.StreamHandler()
-logg_ch = logging.FileHandler('warden.log', mode='a', encoding=None, delay=False)
-logg_ch.setLevel(logging.DEBUG)
+logg_ch = logging.StreamHandler()
+logg_fh = logging.FileHandler('warden.log', mode='a', encoding=None, delay=False)
+logg_ch.setLevel(logging.INFO)
+logg_fh.setLevel(logging.DEBUG)
 
 # crate a formatter and add it to the handler
 # [HH:MM:SS AM][LEVEL] Message string
-logg_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%M:%S')
+logg_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%I:%M:%S')
 logg_ch.setFormatter(logg_formatter)
+logg_fh.setFormatter(logg_formatter)
 
 # add ch to logger
-logg.addHandler(logg_ch)
+logg.addHandler(logg_ch) #console handler at level INFO
+logg.addHandler(logg_fh) #file handler at level DEBUG for more detail
 
 # ready to go!
 # logging convention:
@@ -426,13 +429,12 @@ class Fighter:
         if rand <= tohit: #set damage
             if self.owner.char == '@':
                 damage = 3
-                self.rest(10) # [XXX] I don't think it's supposed to be like this. (+10 stamina every turn?)
             elif self.owner.char == 'A' and d_level < 10:
                 message("Archdemon drains your lifeforce!", libtcod.light_blue)
                 target.fighter.tire_down(100)
             elif self.owner.char == 'A' and d_level == 10:
                 message("The Archdemon cripples you!", libtcod.light_blue)
-                player.figther.tire_down(25)
+                target.fighter.tire_down(25)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
                 target.fighter.tire_down(10)
@@ -1237,6 +1239,7 @@ def monster_death(monster):
     monster.name = 'remains of ' + monster.name
     monster.always_visible = True
     monsters_killed += 1
+    player.fighter.rest(15)
     #make sure the spot where body lies is cleared for other monsters to move on
     libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True)
 
