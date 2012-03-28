@@ -556,7 +556,7 @@ class Pathfinder_arch:
             #player in view
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
-            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self_last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
             libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
             #compute and set path to the player
             x,y = libtcod.path_walk(path_map, True)
@@ -575,7 +575,7 @@ class Pathfinder_arch:
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
-            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self_last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
             libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
             #compute and set path to the player
             x,y = libtcod.path_walk(path_map, True)
