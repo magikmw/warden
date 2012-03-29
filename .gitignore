@@ -1,3 +1,6 @@
 *.pyc
 *.pyo
-*.dat
+main/data/highscores.dat
+*.log
+*.log_old
+*.png

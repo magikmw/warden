@@ -71,12 +71,13 @@
 # [TODO] Add blood decals.
 
 # WAT
+# [XXX] Segfaults should be fixed
 # [TODO] Balance tweaks
 #       * change distribution of monster kind per lv
 #       * reduce the size of levels
 # [XXX] Side panel for stats, reduce size of screen altogether?
-# [FIX] Adjust keyboard repeat? Keys not reged
-# [FIX] srd| reported interface bork
+# [FIX] Keys not regged [Chaged to sys_check_for_event, added a debug message]
+# [FIX?] srd| reported interface bork
 # [XXX] Remove mouselook
 
 ################################
@@ -84,21 +85,66 @@
 
 
 ################################
-# FILE IMPORT                  #
+# LOGGER INITIALIZATION        #
 ################################
 
-import thirdparty.libtcodpy as libtcod #libtcod import, and rename
-import math #for math, duh
+import logging
+
+# create a logger
+logg = logging.getLogger('Main')
+logg.setLevel(logging.DEBUG)
+
+# create a handler and set level
+logg_ch = logging.StreamHandler()
+logg_fh = logging.FileHandler('warden.log', mode='a', encoding=None, delay=False)
+logg_ch.setLevel(logging.INFO)
+logg_fh.setLevel(logging.DEBUG)
+
+# crate a formatter and add it to the handler
+# [HH:MM:SS AM][LEVEL] Message string
+logg_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(message)s', datefmt='%I:%M:%S')
+logg_ch.setFormatter(logg_formatter)
+logg_fh.setFormatter(logg_formatter)
+
+# add ch to logger
+logg.addHandler(logg_ch) #console handler at level INFO
+logg.addHandler(logg_fh) #file handler at level DEBUG for more detail
+
+# ready to go!
+# logging convention:
+# logg.debug('') for variable passing
+# logg.info('') for standard initialization messages
+# logg.warn('') for known errors and caught exceptions
+# logg.error('') for something that shouldn't happen
+# logg.critical('') for breakage errors
+
+logg.info('Logging initialized.')
+
+################################
+# MODULE IMPORT                #
+################################
+
+logg.info('Module import initialized.')
+import libtcodpy as libtcod #libtcod import, and rename
+logg.debug('libTCOD initialized')
+from math import pi, atan, sqrt #for math, duh
+logg.debug('math initialized')
 import textwrap #for messages
+logg.debug('textwrap initialized')
 import datetime
+logg.debug('datetime initialized')
+
+logg.info('All modules imported succesfully.')
 
 ################################
 # CONSTANTS                    #
 ################################
 
+logg.info('Constants initialization.')
+
 #tile
 GAME_TITLE = 'Warden'
-VERSION = '1.1.1'
+VERSION = '1.2'
 
 #DEBUG
 DEBUG_NO_FOG = False
@@ -153,8 +199,6 @@ MSG_HEIGHT = PANEL_HEIGHT - 2 #top message placement (y)
 #menu constants
 INVENTORY_WIDTH = 50
 
-CONFUSE_NUM_TURNS = 5
-
 #tab-look variable declaration
 interest_names = '0'
 interest_pos = '0'
@@ -175,9 +219,16 @@ lv_feeling = 'none'
 d_level = 1
 got_key = True
 
+fov_map = None
+path_map = None
+
+logg.info('Constants initialization finished.')
+
 ################################
 # CLASSES                      #
 ################################
+
+logg.info('Class initialization.')
 
 class Tile:
     #a tile of the map and its properties
@@ -189,6 +240,8 @@ class Tile:
         #by default, if a tile is blocked, it also blocks sight
         if block_sight is None: block_sight = blocked
         self.block_sight = block_sight
+
+logg.debug('Tile initialized.')
 
 class Rect:
     #a rectangle on a map used to make rooms
@@ -207,6 +260,8 @@ class Rect:
     def intersect(self, other):
     #returns true if this rectangle intersects with one another
         return (self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1)
+
+logg.debug('Rect initialized.')
 
 class Object:
     #any entity represented by a character
@@ -232,16 +287,18 @@ class Object:
             self.item.owner = self
 
     def move(self, dx, dy):
+        #logg.debug('move() called, %s, %s', dx, dy)
         #moving by given amount
         if not is_blocked(self.x + dx, self.y + dy):
             self.x += dx
             self.y += dy
 
     def move_towards(self, target_x, target_y):
+        #logg.debug('move_towards() called, %s, %s', target_x, target_y)
         #return a vector and distance to target
         dx = target_x - self.x
         dy = target_y - self.y
-        distance = math.sqrt(dx ** 2 + dy ** 2)
+        distance = sqrt(dx ** 2 + dy ** 2)
 
         #normalize the vector to lenght 1 (preserving directors)
         #round and convert to integer
@@ -250,10 +307,11 @@ class Object:
         self.move(dx, dy)
 
     def is_cardinal(self, target_x, target_y):
+        #logg.debug('is_cardinal() called, %s, %s', target_x, target_y)
         #check if the target tile is in cardinal direction from self
         dx = target_x - self.x
         dy = target_y - self.y
-        distance = math.sqrt(dx ** 2 + dy ** 2)
+        distance = sqrt(dx ** 2 + dy ** 2)
 
         dx = int(round(dx / distance))
         dy = int(round(dy / distance))
@@ -272,14 +330,17 @@ class Object:
             return True
 
     def distance_to(self, other):
+        #logg.debug('distance_to() called %s, %s', other.x, other.y)
         #return the distance to another object (euclidean, and float!)
         dx = other.x - self.x
         dy = other.y - self.y
-        dist = math.sqrt(dx ** 2 + dy ** 2)
+        dist = sqrt(dx ** 2 + dy ** 2)
         return dist
 
     def draw(self):
+        #logg.debug('draw() called')
         #if visible to the player, or explored and always visible
+        #logg.debug('Method draw() called by %s, pos x: %s, y: %s', self.name, str(self.x), str(self.y))
         if libtcod.map_is_in_fov(fov_map, self.x, self.y) or (self.always_visible and map[self.x][self.y].explored):
             libtcod.console_set_default_foreground(con, self.color)
             if map[self.x][self.y].highlight == None:
@@ -288,7 +349,9 @@ class Object:
                 libtcod.console_put_char(con, self.x, self.y, self.char, HIGHLIGHT_COLOR)
 
     def clear(self):
+        #logg.debug('clear() called')
         #clear the sign
+        #logg.debug('Method clear() called by %s, pos x: %s, y: %s', self.name, str(self.x), str(self.y))
         if libtcod.map_is_in_fov(fov_map, self.x, self.y) and map[self.x][self.y].highlight == None:
             libtcod.console_put_char_ex(con, self.x, self.y, '.', libtcod.grey, color_light_ground)
         elif libtcod.map_is_in_fov(fov_map, self.x, self.y) and map[self.x][self.y].highlight == True:
@@ -300,18 +363,24 @@ class Object:
                 libtcod.console_put_char_ex(con, self.x, self.y, ' ', libtcod.black, libtcod.black)
 
     def send_to_back(self):
+        #logg.debug('send_to_back() called')
         #make this obcject drawn first so it appears beneath everything else
         global objects
         objects.remove(self)
         objects.insert(0, self)
 
     def distance(self, x, y):
+        #logg.debug('distance() called, %s, %s', x, y)
         #return the distance to given coordinates
-        return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
+        return sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
+
+logg.debug('Object initialized.')
 
 ################################
 # COMPONENT CLASSES            #
 ################################
+
+logg.info('Component classes initialization.')
 
 #fighting abilities class
 class Fighter:
@@ -325,6 +394,7 @@ class Fighter:
         self.death_function = death_function
 
     def take_damage(self, damage):
+        #logg.debug('take_damage() called, %s', damage)
         #apply damage if possible
         if damage > 0:
             self.hp -= damage
@@ -337,10 +407,11 @@ class Fighter:
 
     #cauchy distribution attack formula, should work neatly
     def attack(self, target):
+        #logg.debug('attack() called, %s', target.name)
         victim = target.fighter #lets give the target an easier callname
         damage = 0
 
-        tohit = math.atan((float(self.power) - float(victim.power)/(5.0)))/math.pi + 0.5
+        tohit = atan((float(self.power) - float(victim.power)/(5.0)))/pi + 0.5
         #main system function + crit bonus below
         if self.power > victim.power:
             diff = self.power - victim.power
@@ -357,16 +428,15 @@ class Fighter:
         if rand <= tohit: #set damage
             if self.owner.char == '@':
                 damage = 3
-                self.rest(10)
             elif self.owner.char == 'A' and d_level < 10:
                 message("Archdemon drains your lifeforce!", libtcod.light_blue)
                 target.fighter.tire_down(100)
             elif self.owner.char == 'A' and d_level == 10:
                 message("The Archdemon cripples you!", libtcod.light_blue)
-                target.figther.tire_down(25)
+                target.fighter.tire_down(25)
             else:
                 message(target.name.capitalize() + ' blocks the ' + self.owner.name + "'s attack!", libtcod.light_blue)
-                target.fighter.tire_down(10)
+                target.fighter.tire_down(5)
 
         else:
             message(self.owner.name.capitalize() + ' misses!', libtcod.light_blue)
@@ -410,6 +480,8 @@ class Fighter:
                 message("The corruption and your wounds take their toll.", libtcod.dark_purple)
                 self.stamina += 70
 
+logg.debug('Fighter initialized.')
+
 #basic pathfinding AI for monsters
 class Pathfinder:
     def __init__(self, alerted = 0, last_x=None, last_y=None):
@@ -418,6 +490,7 @@ class Pathfinder:
         self.last_y = last_y
 
     def take_turn(self):
+        #logg.debug('Take turn called.')
         monster = self.owner
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True) #unlock own tile before move
 
@@ -426,33 +499,37 @@ class Pathfinder:
             self.alerted = 15 #stay alert for 5 turns
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
-            libtcod.dijkstra_compute(path_map, monster.x, monster.y)
-            libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
+            libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
             #compute and set path to the player
-            if path_map is not False: #if there is a possible path
-                x,y = libtcod.dijkstra_get(path_map, 0) #get next tile from path
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
+            if x is not None and y is not None: #if there is a possible path
                 if monster.distance_to(player) > 1: #if player is away
                     if not is_blocked(x,y): #if next tile is not blocked
                         monster.move_towards(x,y) #move to next tile
                     else: #if it is blocked, move in random direction
                         dir = random_step()
                         monster.move(dir[0],dir[1])
+                    logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
                 elif player.fighter.power > 0 and monster.is_cardinal(player.x, player.y) == True:
                 #if player is alive and in cardinal direction - attack
+                    logg.debug('Monster attacks x: %s, y: %s', player.x, player.y)
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
             self.alerted = self.alerted - 1 #decrease the alert level
-            libtcod.dijkstra_compute(path_map, monster.x, monster.y)
-            libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
             #move towards the player's last known position or stumble around if impossible
-            if path_map is not False:
-                x,y = libtcod.dijkstra_get(path_map, 0)
+            if x is not None and y is not None:
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
                     dir = random_step()
                     monster.move(dir[0],dir[1])
+            logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
 
         else: #move in random direction if left all alone
             dir = random_step()
@@ -460,6 +537,8 @@ class Pathfinder:
 
         #finally, block the tile so other monsters can path around it
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, False)
+
+logg.debug('Pathfinder initialized.')
 
 class Pathfinder_arch:
     def __init__(self, alerted = 1, last_x=None, last_y=None):
@@ -476,33 +555,38 @@ class Pathfinder_arch:
             #player in view
             self.last_x = player.x #remember player's last position
             self.last_y = player.y
-            libtcod.dijkstra_compute(path_map, monster.x, monster.y)
-            libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
+            libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
             #compute and set path to the player
-            if path_map is not False: #if there is a possible path
-                x,y = libtcod.dijkstra_get(path_map, 0) #get next tile from path
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
+            if x is not None and y is not None: #if there is a possible path
                 if monster.distance_to(player) > 1: #if player is away
                     if not is_blocked(x,y): #if next tile is not blocked
                         monster.move_towards(x,y) #move to next tile
                     else: #if it is blocked, move in random direction
                         dir = random_step()
                         monster.move(dir[0],dir[1])
+                    logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
                 elif player.fighter.power > 0 and monster.is_cardinal(player.x, player.y) == True:
-                #if player is alive and in cardinal direction - attack
+                    #if player is alive and in cardinal direction - attack
+                    logg.debug('Monster attacks x: %s, y: %s', player.x, player.y)
                     monster.fighter.attack(player)
         elif self.alerted >= 1 and not libtcod.map_is_in_fov(fov_map, monster.x, monster.y):
         #if lost sight of the player and alerted
-            libtcod.dijkstra_compute(path_map, monster.x, monster.y)
-            libtcod.dijkstra_path_set(path_map, self.last_x, self.last_y)
+            logg.debug('libtcod.path_compute() called by %s, pos x: %s, y: %s to x: %s, y: %s', monster.name, str(monster.x), str(monster.y), self.last_x, self.last_y)
+            libtcod.path_compute(path_map, monster.x, monster.y, self.last_x, self.last_y)
+            #compute and set path to the player
+            x,y = libtcod.path_walk(path_map, True)
+            logg.debug('x,y set to x: %s, y: %s', x, y)
             #move towards the player's last known position or stumble around if impossible
-            if path_map is not False:
-                x,y = libtcod.dijkstra_get(path_map, 0)
+            if x is not None and y is not None: #if there is a possible path
                 if not is_blocked(x,y):
                     monster.move_towards(x,y)
                 else:
                     dir = random_step()
                     monster.move(dir[0],dir[1])
-
+            logg.debug('Monster moved to x: %s, y: %s', monster.x, monster.y)
         else: #move in random direction if left all alone
             dir = random_step()
             monster.move(dir[0],dir[1])
@@ -510,25 +594,7 @@ class Pathfinder_arch:
         #finally, block the tile so other monsters can path around it
         libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, False)
 
-#AI for any temporarily confused monster
-class ConfusedMonster:
-    def __init__(self, old_ai, num_turns=CONFUSE_NUM_TURNS):
-        self.old_ai = old_ai
-        self.num_turns = num_turns
-
-    def take_turn(self):
-        libtcod.map_set_properties(fov_map, self.owner.x, self.owner.y, not map[self.owner.x][self.owner.y].block_sight, True)
-
-        if self.num_turns > 0: #if still confused
-            #move in random direction, decrease the number of confusion turns left
-            dir = random_step()
-            self.owner.move(dir[0],dir[1])
-            self.num_turns -= 1
-
-        else: #restore to previous AI
-            self.owner.ai = self.old_ai
-            message('The ' + self.owner.name + ' does not look confused anymore!', libtcod.red)
-        libtcod.map_set_properties(fov_map, self.owner.x, self.owner.y, not map[self.owner.x][self.owner.y].block_sight, False)
+logg.debug('Pathfinder_arch initialized')
 
 #an item that can be picked up and used
 class Item:
@@ -589,34 +655,49 @@ class Item:
                 inventory.append(self.owner)
                 message('You are no longer wearing/wielding ' + self.owner.name + '.')
 
+logg.debug('Item initialized.')
+logg.info('Class initialization finished.')
+
 ################################
 # FUNCTIONS                    #
 ################################
 
+logg.info('Functions initialization.')
+
 #room creation function
 def create_room(room):
+    #logg.debug('create_room() called')
     global map
     for x in range(room.x1 + 1, room.x2):
        for y in range(room.y1 + 1, room.y2):
             map[x][y].blocked = False
             map[x][y].block_sight = False
 
+logg.debug('create_room()')
+
 #horizontal tunnel creation between rooms
 def create_h_tunnel(x1, x2, y):
+    #logg.debug('create_h_tunnel() called')
     global map
     for x in range(min(x1, x2), max(x1, x2) + 1):
         map[x][y].blocked = False
         map[x][y].block_sight = False
 
+logg.debug('create_h_tunnel()')
+
 #vertical tunnel creation between rooms
 def create_v_tunnel(y1, y2, x):
+    #logg.debug('create_v_tunnel')
     global map
     for y in range(min(y1, y2), max(y1, y2) + 1):
         map[x][y].blocked = False
         map[x][y].block_sight = False
 
+logg.debug('create_v_tunnel')
+
 #map generation function
 def make_map():
+    #logg.debug('make_map() called')
     global map, objects, num_rooms, hole, drop, lv_feeling
 
     #the list of objects with just the player
@@ -717,9 +798,14 @@ def make_map():
         objects.append(monster)
         lv_feeling = 'finale'
 
+    #logg.debug('make_map() finished with %s rooms, player at %s, %s, lv_feeling = %s, exit at %s, %s', num_rooms, player.x, player.y, lv_feeling, new_x, new_y)
+
+logg.debug('make_map()')
+
 #object generator function
 def place_objects(room):
     global num_rooms, drop, got_key, NUM_POTIONS, NUM_SHARDS, NUM_ARCH, lv_feeling
+    #logg.debug('place_objects called in room %s', num_rooms)
     #choose a random number of monsters
     num_monsters = libtcod.random_get_int(0, 2, MAX_ROOM_MONSTERS + d_level)
 
@@ -813,6 +899,10 @@ def place_objects(room):
         NUM_ARCH -= 1
         lv_feeling = 'arch'
 
+        #logg.debug('place_objects done', num_rooms)
+
+logg.debug('place_objects()')
+
 #rendering function
 def render_all():
     global fov_map
@@ -905,13 +995,19 @@ def render_all():
 
     #blit panel's contents to the root console
     libtcod.console_blit(panel, 0, 0, SCREEN_WIDTH, PANEL_HEIGHT, 0, 0, PANEL_Y)
+logg.debug('render_all()')
 
 #keystrokes function
 def handle_keys():
     global fov_recompute, pick_list, high, init_font
 
-    key = libtcod.console_check_for_keypress(libtcod.KEY_PRESSED)
+    key = libtcod.Key()
+
+    libtcod.sys_check_for_event(libtcod.EVENT_KEY_PRESS, key, libtcod.Mouse())
     key_char = chr(key.c)
+
+    if key.vk is not 0:
+        logg.debug('Key pressed: key_char[%s], key.vk[%s].', key_char, key.vk)
 
     #toggle fullscreen
     if key.vk == libtcod.KEY_F11:
@@ -1027,60 +1123,6 @@ def handle_keys():
 
         else:
             #test for other keys
-            """
-            if key_char == 'g':
-                pick_list = []
-                #pick up an item
-                for object in objects: #look for an item in player's tile
-                    if object.x == player.x and object.y == player.y and object.item:
-                        pick_list.append(object)
-
-                #if there's only one item, pick it up instantly
-                if len(pick_list) == 1:
-                    pick_list[0].item.pick_up()
-                    return True
-
-                #if there's more, display a menu to chose one
-                elif len(pick_list) > 1:
-                    high = ord('a')
-                    chosen_item = pickup_menu('Choose an item to pick up.\n')
-                    if chosen_item is not None:
-                        chosen_item.item.pick_up()
-                        return True
-
-            if key_char == 'a':
-                #show the inventory, if an item is selected, use it
-                high = ord('a')
-                chosen_item = inventory_menu('Press the key next to an item to use it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.use()
-                    return True
-
-            if key_char == 'w':
-                #show the inventory, let player wear the items
-                high = ord('a')
-                chosen_item = inventory_menu('Press the key next to an item to wear it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.wear()
-                    return True
-
-            if key_char == 'r':
-                #show the equipment screen, let the player remove the one he chose
-                high = ord('a')
-                chosen_item = equipment_menu('Press the key next to an item to remove it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.remove()
-                    return True
-
-            if key_char == 'd':
-                #show the inventory, if an item is selected, drop it
-                high = ord('a')
-                chosen_item = inventory_menu('Press the key next to an item to drop it, or any other to cancel.\n')
-                if chosen_item is not None:
-                    chosen_item.drop()
-                    return True
-
-            """
 
             if key_char == 'o':
                 #find hole, and jump!
@@ -1104,6 +1146,8 @@ def handle_keys():
                 help_screen()
 
             return 'didnt-take-turn' #This makes sure that monsters don't take turn if player did not.
+
+logg.debug('handle_keys()')
 
 #movement and attacking
 def player_move_or_attack(dx, dy):
@@ -1148,6 +1192,8 @@ def player_move_or_attack(dx, dy):
 
         fov_recompute = True
 
+logg.debug('player_move_or_attack()')
+
 #function that checks if the tile is blocked
 def is_blocked(x, y):
     #check map tile first
@@ -1156,6 +1202,7 @@ def is_blocked(x, y):
         if map[x][y].blocked:
             return True
     except IndexError:
+        logg.warn('is_blocked() catched an IndexError with values x: %s and y: %s', str(x), str(y))
         return True
 
     #than check for blocking objects
@@ -1164,6 +1211,8 @@ def is_blocked(x, y):
             return True
 
     return False
+
+logg.debug('is_blocked()')
 
 #GAME OVER MAN, GAME OVER
 def player_death(player):
@@ -1176,6 +1225,8 @@ def player_death(player):
     #visual corpse change
     player.char = '%'
     player.color = libtcod.darker_red
+
+logg.debug('player_death()')
 
 #monster death function
 def monster_death(monster):
@@ -1190,10 +1241,13 @@ def monster_death(monster):
     monster.name = 'remains of ' + monster.name
     monster.always_visible = True
     monsters_killed += 1
+    player.fighter.rest(15)
     #make sure the spot where body lies is cleared for other monsters to move on
     libtcod.map_set_properties(fov_map, monster.x, monster.y, not map[monster.x][monster.y].block_sight, True)
 
     monster.send_to_back()
+
+logg.debug('monster_death()')
 
 def archdemon_death(monster):
 
@@ -1217,6 +1271,8 @@ def archdemon_death(monster):
 
     game_state = "win"
 
+logg.debug('archdemon_death()')
+
 def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, console):
     #bar rendering function (hp/xp/mana, whatever)
     if maximum == 0:
@@ -1239,6 +1295,8 @@ def render_bar(x, y, total_width, name, value, maximum, bar_color, back_color, c
     libtcod.console_set_default_foreground(panel, libtcod.white)
     libtcod.console_print_ex(console, x + total_width / 2, y, libtcod.BKGND_NONE, libtcod.CENTER, name + ': ' + str(value))
 
+logg.debug('render_bar()')
+
 #msgs handling function
 def message(new_msg, color = libtcod.white):
     new_msg_lines = textwrap.wrap(new_msg, MSG_WIDTH)
@@ -1250,6 +1308,8 @@ def message(new_msg, color = libtcod.white):
 
         #add the new line as a tuple, with the text and colour
         game_msgs.append( (line, color) )
+
+logg.debug('message()')
 
 #return a string with objects names that are under the mouse
 def get_names_under_mouse():
@@ -1275,6 +1335,8 @@ def get_names_under_mouse():
     names = ', ' .join(names) #join the names separated by commas
     return names.capitalize()
 
+logg.debug('get_names_under_mouse()')
+
 #return a string with objects names that are on the same tile as player
 def get_names_player_tile():
     (x, y) = (player.x, player.y)
@@ -1284,12 +1346,16 @@ def get_names_player_tile():
     names = ', ' .join(names)
     return names.capitalize()
 
+logg.debug('get_names_player_tile()')
+
 def interest_list():
     global interest_names, interest_pos
 
     interest_names = [obj.name for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
 
     interest_pos = [(obj.x, obj.y) for obj in objects if libtcod.map_is_in_fov(fov_map, obj.x, obj.y) and not obj.char == '@']
+
+logg.debug('interest_list()')
 
 def interest_tab(position, name):
     global interest_cycle, highlight, old_highlight_tab
@@ -1312,6 +1378,8 @@ def interest_tab(position, name):
             interest_cycle = 0
         else:
             interest_cycle += 1
+
+logg.debug('interest_tab()')
 
 #menu function - initially for the inventory screen
 def menu(header, options, width, offset=0):
@@ -1398,108 +1466,28 @@ def menu(header, options, width, offset=0):
     if index >= 0 and index < len(options): return index
     return 99
 
-#inventory menu function (utilizes above)
-def inventory_menu(header):
-     while True:
-        if len(inventory) ==  0:
-            options = ['Inventory is empty.']
-
-        else:
-            options = [item.name for item in inventory]
-
-        index = menu(header, options, INVENTORY_WIDTH)
-
-        #if an item was chosen, return it
-        if index is None or len(inventory) == 0: return None
-        elif index == 99: continue
-        else: return inventory[index].item
-
-def pickup_menu(header):
-    while True:
-        options = [item.name for item in  pick_list]
-
-        index = menu(header, options, INVENTORY_WIDTH)
-
-        if index is None or len(pick_list) == 0: return None
-        elif index == 99: continue
-        else: return pick_list[index]
-
-def equipment_menu(header):
-    while True:
-        if len(equipment) == 0:
-            options = ['You are not wearing or wielding anything.']
-
-        else:
-            options = [item.name for item in equipment]
-
-        index = menu(header, options, INVENTORY_WIDTH)
-
-        #if an item was chosen, return it
-        if index is None or len(equipment) == 0: return None
-        elif index == 99: continue
-        else: return equipment[index].item
-
-#find the closest enemy, up to a maximum range in the player's FOV
-def closest_monster(max_range):
-    closest_enemy = None
-    closest_dist = max_range + 1 #start with slightly more then maximum range
-
-    for object in objects:
-        if object.fighter and not object == player and libtcod.map_is_in_fov(fov_map, object.x, object.y):
-        #calculate the distance between the object and the player
-            dist = player.distance_to(object)
-            if dist < closest_dist: #it's closest, remember
-                closest_enemy = object
-                closest_dist = dist
-    return closest_enemy
-
-#return the position of left-clicked tile in player's FOV/set range, None,None if right-clicked
-def target_tile(max_range=None):
-    while True:
-        #render the screen erasing the inventory and showing the objects name under the mouse
-        render_all()
-        libtcod.console_flush()
-
-        key = libtcod.console_check_for_keypress()
-        mouse = libtcod.mouse_get_status() #get ouse position and click status
-        (x, y) = (mouse.cx, mouse.cy)
-
-        #accept the target if the player clicked in FOV and check for optional range
-        if (mouse.lbutton_pressed and libtcod.map_is_in_fov(fov_map, x, y) and
-            (max_range is None or player.distance(x, y) <= max_range)):
-            return(x, y)
-
-        #cancel if player right-clicked or pressed Escape
-        if mouse.rbutton_pressed or key.vk == libtcod.KEY_ESCAPE:
-            message('Cancelled.', libtcod.white)
-            return (None, None)
-
-#returns a clicked monster inside FOV or range, or None if right-clicked
-def target_monster (max_range=None):
-    while True:
-        (x, y) = target_tile(max_range)
-        if x is None: #player cancelled
-            message('Cancelled.', libtcod.white)
-            return None
-
-        #return the first clicked monster, loop until you do
-        for obj in objects:
-            if obj.x == x and obj.y == y and obj.fighter and obj != player:
-                return obj
+logg.debug('menu()')
 
 def msgbox(text, width=50):
     menu(text, [], width) #uses menu() as a message box
     libtcod.sys_sleep_milli(1000)
 
-#a simple win condition - kill enough monsters to win
-def win_condition():
-    if monsters_killed >= MONSTERS_TO_WIN:
-        return True
+logg.debug('msgbox()')
 
 #create a pathing map from the fov_map
 def make_path_map():
+    logg.debug('make_path_map() called')
     global path_map
-    path_map = libtcod.dijkstra_new(fov_map, 0)
+    path_map = libtcod.path_new_using_map(fov_map, 0)
+
+logg.debug('make_path_map()')
+
+def destroy_path_map():
+    logg.debug('destroy_path_map() called')
+    global path_map
+    libtcod.path_delete(path_map)
+
+logg.debug('make_path_map()')
 
 def random_step():
     #valid move directions (including waiting)
@@ -1518,100 +1506,18 @@ def random_step():
 
     return dir
 
-def dice_roll(dices, sides):
-    result = 0
-    while not dices == 0:
-        roll = libtcod.random_get_int(0, 1, sides)
-        result = result + roll
-        dices -= 1
-
-    return result
-################################
-# Wearable Items               #
-################################
-
-def wield_weapon(rating):
-    global weapon_wield
-    if weapon_wield == False:
-        player.fighter.power = player.fighter.power + rating
-        weapon_wield = True
-    else:
-        return 'cancelled'
-
-def remove_weapon(rating):
-    global weapon_wield
-    player.fighter.power = player.fighter.power - rating
-    weapon_wield = False
-
-def wear_armor(rating):
-    global armor_worn
-    if armor_worn == False:
-        player.fighter.defense = player.fighter.defense + rating
-        armor_worn = True
-    else:
-        return 'cancelled'
-
-def remove_armor(rating):
-    global armor_worn
-    player.fighter.defense = player.fighter.defense - rating
-    armor_worn = False
+logg.debug('random_step()')
 
 ################################
 # Magic Effects                #
 ################################
-
-#player healing (by set amount)
-#[why] should be easy enough to convert this to RNG value
-def cast_heal():
-    if player.fighter.hp == player.fighter.max_hp:
-        message('You are already at full health.', libtcod.red)
-        return 'cancelled'
-
-    heal = dice_roll(2,5) + 2
-
-    message('Your wounds start to feel better!', libtcod.light_violet)
-    player.fighter.heal(heal)
 
 def cast_power():
     message('You drink the potion and feel the power in your veins!', libtcod.light_violet)
     player.fighter.stamina = 100
     player.fighter.power += 1
 
-#lightning spell that finds closest enemy within a maximum range and deals damage
-#[why] as with above, should be easy to tweak this to semi-random
-def cast_lightning():
-    monster = closest_monster(LIGHTNING_RANGE)
-    if monster is None: #if no enemy is found within max range - cancel
-        message('No enemy is close enough to strike with vengeance.', libtcod.red)
-        return 'cancelled'
-
-    #target found? light'em up!
-    message('A lightning bolt strikes the ' + monster.name + ' with a loud thunder! The damage is ' + str(LIGHTNING_DAMAGE) + ' hit points.', libtcod.light_blue)
-    monster.fighter.take_damage(LIGHTNING_DAMAGE)
-
-def cast_confuse():
-    #ask the player to select a target for confuse spell
-    message('Left-click an enemy to confuse it, or right-click to cancel.', libtcod.light_cyan)
-    monster = target_monster(CONFUSE_RANGE)
-    if monster is None: return 'cancelled'
-
-    #replace the monster's AI with "confused"
-    old_ai = monster.ai
-    monster.ai = ConfusedMonster(old_ai)
-    monster.ai.owner = monster #tell the new component who owns it
-    message('The eyes of the ' + monster.name + ' look vacant, as it starts to stumble around!', libtcod.light_green)
-
-def cast_fireball():
-    #ask the player for a target tile to throw a fireball at
-    message('Left-click a target tile for the fireball, or right-click to cancel.', libtcod.light_cyan)
-    (x, y) = target_tile()
-    if x is None: return 'cancelled'
-    message('The fireball explodes, burning everything within ' + str(FIREBALL_RADIUS) + ' tiles!', libtcod.orange)
-
-    for obj in objects: #damage every fighter in range, including the player
-        if obj.distance(x, y) <= FIREBALL_RADIUS and obj.fighter:
-            message('The ' + obj.name + ' gets burned for ' + str(FIREBALL_DAMAGE) + ' hit points.', libtcod.orange)
-            obj.fighter.take_damage(FIREBALL_DAMAGE)
+logg.debug('cast_power()')
 
 def get_shard():
     global got_key
@@ -1622,6 +1528,8 @@ def get_shard():
         message('This sword will allow you to kill the Archdemon!', libtcod.light_blue)
         player.fighter.power += 3
     got_key = True
+
+logg.debug('get_shard()')
 
 ################################
 # META-GAME FUNCTIONS          #
@@ -1653,9 +1561,11 @@ def main_menu():
 
         libtcod.console_flush() #clear the console before redraw (fixes blacking out issue?
 
+logg.debug('main_menu()')
+
 #new game initialisation
 def new_game():
-    global player, inventory, game_msgs, game_state, d_level, monsters_killed, win_print, equipment, weapon_wield, armor_worn, player_gold, highlight, old_highlight_tab, old_highlight, turns_passed, explheal, didnttaketurn
+    global player, inventory, game_msgs, game_state, d_level, monsters_killed, win_print, equipment, weapon_wield, armor_worn, player_gold, highlight, old_highlight_tab, old_highlight, turns_passed, explheal, didnttaketurn, path_map
 
     PLAYER_NAME = input_box("Enter your name:", 30)
     if PLAYER_NAME == "":
@@ -1684,6 +1594,9 @@ def new_game():
     initialize_fov()
 
     #gen path map
+    if path_map is not None:
+        destroy_path_map()
+
     make_path_map()
 
     #game state variables
@@ -1714,14 +1627,19 @@ def new_game():
     message('Use arrows, numpad or vi-keys to move.', libtcod.lightest_gray)
     message('Press F1 to display the help screen.', libtcod.lightest_gray)
 
+logg.debug('new_game()')
+
 def new_level():
     global player, game_msgs, game_state, d_level, lv_feeling
+
+    #logg.debug('new_level() called, d_lv is %s', d_level + 1)
 
     lv_feeling = 'none'
     d_level += 1 #add one to the dungeon level
     make_map()
     got_key = False
     initialize_fov()
+    destroy_path_map()
     make_path_map()
     game_state='playing'
     if lv_feeling == 'none':
@@ -1733,10 +1651,17 @@ def new_level():
     elif lv_feeling == 'finale':
         message('Here it is! Kill the Archdemon!', libtcod.light_red)
 
+logg.debug('new_level()')
+
 #as name says
 def initialize_fov():
+    #logg.debug('initialize_fov() called')
     global fov_recompute, fov_map
     fov_recompute = True
+
+    #clear old map if present
+    if fov_map is not None:
+        libtcod.map_clear(fov_map, transparent = False, walkable = False)
 
     #create the FOV map, according to the generated map
     fov_map = libtcod.map_new(MAP_WIDTH, MAP_HEIGHT)
@@ -1753,8 +1678,11 @@ def initialize_fov():
         for object in objects:
             object.always_visible = True
 
+logg.debug('initialize_fov()')
+
 #main game function
 def play_game():
+    #logg.debug('play_game() called')
     global game_state, win_print, highlight, interest_cycle, didnttaketurn, turns_passed
     player_action = None
 
@@ -1788,12 +1716,16 @@ def play_game():
                 player.fighter.stamina = 100
             player.fighter.tire_down(1)
             highlight = 0
+            turns_passed += 1
+            logg.debug('Turn %s, AI is taking turn.', turns_passed)
             for object in objects:
                 if object.ai:
                     object.ai.take_turn()
 
             interest_list()
             interest_cycle = 0
+
+logg.debug('play_game()')
 
 def input_box(header, width=50):
     timer = 0
@@ -1860,6 +1792,8 @@ def input_box(header, width=50):
 
     return command
 
+logg.debug('input_box()')
+
 def highscores():
     scores = []
     try:
@@ -1908,6 +1842,8 @@ def highscores():
     libtcod.sys_sleep_milli(1000)
 
     libtcod.sys_wait_for_event(libtcod.EVENT_KEY_RELEASE | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), True)
+
+logg.debug('highscores()')
 
 def help_screen():
     halp = libtcod.console_new(70, 35)
@@ -1963,33 +1899,46 @@ def help_screen():
         if libtcod.sys_wait_for_event(libtcod.EVENT_KEY_PRESS | libtcod.EVENT_MOUSE_PRESS, libtcod.Key(), libtcod.Mouse(), False) != 0:
             return False
 
-
-
+logg.debug('help_screen()')
+logg.info('Functions initialization finished.')
 ################################
 # Initialization               #
 ################################
 
+logg.info('Main loop initialization.')
+logg.info('Auto detect screen resolution and set font size.')
 #font import, spawn window, window name, FPS (if real-time)
 res_height = libtcod.sys_get_current_resolution()[1]
+logg.debug('Screen height detected: %s', str(res_height))
 if res_height <= 550:
+    logg.debug('Font size set to 8')
     init_font = 8
     libtcod.console_set_custom_font('main/data/terminal8x8_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 600:
+    logg.debug('Font size set to 10')
     init_font = 10
     libtcod.console_set_custom_font('main/data/terminal10x10_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 elif res_height <= 900:
+    logg.debug('Font size set to 12')
     init_font = 12
     libtcod.console_set_custom_font('main/data/terminal12x12_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
 else:
+    logg.debug('Font size set to 16')
     init_font = 16
     libtcod.console_set_custom_font('main/data/terminal16x16_gs_ro.png', libtcod.FONT_LAYOUT_ASCII_INROW | libtcod.FONT_TYPE_GRAYSCALE)
+logg.debug('Main console initialization.')
 libtcod.console_init_root(SCREEN_WIDTH, SCREEN_HEIGHT, GAME_TITLE + ' v.' + VERSION, False, renderer = libtcod.RENDERER_SDL)
+logg.debug('Setting the FPS limit.')
 libtcod.sys_set_fps(LIMIT_FPS)
+logg.debug('Drawing console initialization.')
 con = libtcod.console_new(SCREEN_WIDTH, SCREEN_HEIGHT) #new console, used ALOT[why]
 #bottom panel console
+logg.debug('Bottom panel console initialization.')
 panel = libtcod.console_new(SCREEN_WIDTH, PANEL_HEIGHT)
 
 high = ord('a')
+logg.info('Invoking main_menu()')
 main_menu()
 
+logg.info('Program terminated properly. Have a nice day.')
 #End of the line.
