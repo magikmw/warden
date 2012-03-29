@@ -144,7 +144,7 @@ logg.info('Constants initialization.')
 
 #tile
 GAME_TITLE = 'Warden'
-VERSION = '1.1.1'
+VERSION = '1.2'
 
 #DEBUG
 DEBUG_NO_FOG = False
