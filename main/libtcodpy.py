@@ -53,7 +53,7 @@ if sys.platform.find('linux') != -1:
             _lib = ctypes.cdll['./main/libtcod.so']
             LINUX=True
         except:
-            print("Can't find any libtcod library!"
+            print("Can't find any libtcod library!")
 else:
     try:
         _lib = ctypes.cdll['./main/libtcod-mingw.dll']
