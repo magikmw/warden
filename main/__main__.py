@@ -125,8 +125,7 @@ logg.info('Logging initialized.')
 ################################
 
 logg.info('Module import initialized.')
-
-import thirdparty.libtcodpy as libtcod #libtcod import, and rename
+import libtcodpy as libtcod #libtcod import, and rename
 logg.debug('libTCOD initialized')
 from math import pi, atan, sqrt #for math, duh
 logg.debug('math initialized')

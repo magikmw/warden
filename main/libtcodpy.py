@@ -29,6 +29,7 @@ import sys
 import ctypes
 import struct
 from ctypes import *
+from platform import platform
 
 if not hasattr(ctypes, "c_bool"):   # for Python < 2.6
     c_bool = c_uint8
@@ -40,14 +41,25 @@ except ImportError:
     numpy_available = False
 
 if sys.platform.find('linux') != -1:
-    _lib = ctypes.cdll['./main/thirdparty/libtcod.so']
-    LINUX=True
+    arch = platform()
+    if arch.find('x86_64') != -1:
+        _lib = ctypes.cdll['./main/libtcod64.so']
+        LINUX=True
+    elif arch.find('i686') != -1:
+        _lib = ctypes.cdll['./main/libtcod32.so']
+        LINUX=True
+    else:
+        try:
+            _lib = ctypes.cdll['./main/libtcod.so']
+            LINUX=True
+        except:
+            print("Can't find any libtcod library!"
 else:
     try:
-        _lib = ctypes.cdll['./main/thirdparty/libtcod-mingw.dll']
+        _lib = ctypes.cdll['./main/libtcod-mingw.dll']
         MINGW=True
     except WindowsError:
-        _lib = ctypes.cdll['./main/thirdparty/libtcod-VS.dll']
+        _lib = ctypes.cdll['./main/libtcod-VS.dll']
         MSVC=True
     # On Windows, ctypes doesn't work well with function returning structs,
     # so we have to user the _wrapper functions instead
