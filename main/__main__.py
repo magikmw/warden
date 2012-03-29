@@ -66,7 +66,15 @@
 #                                                           #
 #############################################################
 
+### Interface/mechanics/accesability
+# Big stamina bar (fluid like)
+# Power crystals that would blink and shatter when stamina < n
+# Sounds would help
+# Drop the labels
+# Stamina <= 0 -> Dead
+
 # Pretty stuff
+# [TODO] Sounds
 # [TODO] Flash on hit
 # [TODO] Add blood decals.
 
