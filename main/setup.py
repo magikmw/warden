@@ -1,3 +1,5 @@
+"""This is a simple setup.py used to run py2exe"""
+
 from distutils.core import setup
 import py2exe
 
